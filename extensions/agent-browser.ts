@@ -13,6 +13,10 @@ import { Type } from "@sinclair/typebox";
 
 const TOOL_DESCRIPTION = `Browser automation via agent-browser CLI.
 Workflow: open URL → snapshot -i (get @refs like @e1) → interact → re-snapshot after page changes.
+Viewing policy:
+  Use snapshot -i and get text first.
+  Use screenshot only when visual layout, styling, or images are needed.
+  Do not take screenshots for text-only questions.
 Commands:
   open <url> - Navigate to URL
   snapshot -i - Interactive elements with @refs (re-snapshot after navigation)

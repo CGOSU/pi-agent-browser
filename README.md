@@ -1,64 +1,59 @@
 # pi-agent-browser
 
-Browser automation tool for [pi](https://github.com/mariozechner/pi-coding-agent). Gives the LLM a `browser` tool that drives a real browser via [agent-browser](https://www.npmjs.com/package/agent-browser).
-
-## Install
+为 `pi` 提供浏览器自动化工具。通过 `agent-browser` 控制真实浏览器，支持访问网页、读取页面内容、操作元素和获取
+## 安装
 
 ```bash
 pi install npm:pi-agent-browser
 ```
 
-Or try it without installing:
+不安装到 pi 时，也可以直接加载：
 
 ```bash
 pi -e npm:pi-agent-browser
 ```
 
-## What it does
+首次使用时，如果未安装 `agent-browser`，插件会提示安装，并下载 Chromium。
 
-Registers a `browser` tool that the LLM can call to:
+## 使用
 
-- **Navigate** — `open <url>`
-- **Inspect** — `snapshot -i` (returns interactive elements with `@ref` handles)
-- **Interact** — `click @e1`, `fill @e2 "search query"`, `press Enter`, `scroll down`
-- **Read** — `get text`, `get title`, `get url`, `get text @e3`
-- **Screenshot** — returns the image inline so the LLM can see the page
-- **Clean up** — `close` (also auto-closes on session shutdown)
+在 pi 中调用 `browser` 工具：
 
-## Features
-
-| Feature | Details |
-|---|---|
-| **Inline screenshots** | Screenshots are returned as base64 images — the LLM can describe what it sees |
-| **Output truncation** | Large `snapshot` output is truncated to fit context windows, with full output saved to a temp file |
-| **Auto-install** | If `agent-browser` isn't installed, prompts to install it (npm + Chromium download) |
-| **Session cleanup** | Browser is automatically closed on pi session shutdown — no orphaned Chromium processes |
-| **TUI rendering** | Compact display: shows command inline, element counts for snapshots, screenshot paths |
-
-## Example
-
-```
-You: Open hacker news and tell me the top 3 stories
-
-browser open https://news.ycombinator.com
+```text
+browser open https://www.baidu.com
 browser snapshot -i
+browser click @e1
+browser screenshot
 browser close
-
-The top 3 stories on Hacker News right now are:
-1. ...
-2. ...
-3. ...
 ```
 
-## Requirements
+常用命令：
 
-- [agent-browser](https://www.npmjs.com/package/agent-browser) — installed automatically on first use, or manually:
-  ```bash
-  npm install -g agent-browser
-  agent-browser install  # downloads Chromium
-  ```
-- A vision-capable model (for screenshot descriptions): Claude Sonnet/Opus, GPT-4o, Gemini Pro, etc.
+| 命令 | 说明 |
+| --- | --- |
+| `open <url>` | 打开网页 |
+| `snapshot -i` | 查看页面中的可交互元素及其引用，如 `@e1` |
+| `click <@ref>` | 点击元素 |
+| `fill <@ref> <text>` | 清空并填写输入框 |
+| `type <@ref> <text>` | 在输入框中追加文本 |
+| `select <@ref> <value>` | 选择下拉选项 |
+| `press <key>` | 按键，如 `Enter`、`Tab` |
+| `scroll <dir> [px]` | 滚动页面 |
+| `get text\|url\|title [@ref]` | 获取页面或元素信息 |
+| `wait <@ref\|ms>` | 等待元素或指定毫秒数 |
+| `screenshot [--full]` | 获取截图并返回给模型 |
+| `close` | 关闭浏览器 |
 
-## License
+页面发生变化后，重新执行 `snapshot -i` 获取最新的元素引用。
 
-MIT
+## 环境要求
+
+- Node.js 20 或更高版本
+- 需要理解截图内容时，应使用支持视觉输入的模型
+
+手动安装依赖：
+
+```bash
+npm install -g agent-browser
+agent-browser install
+```

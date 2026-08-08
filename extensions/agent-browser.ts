@@ -32,6 +32,55 @@ Commands:
   close - Close browser
 Any valid agent-browser command works.`;
 
+let agentBrowserInstalled = false;
+
+function parseCommand(command: string): string[] {
+  const args: string[] = [];
+  let current = "";
+  let quote: '"' | "'" | null = null;
+  let hasValue = false;
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i];
+
+    if (quote === '"' && char === "\\" && (command[i + 1] === '"' || command[i + 1] === "\\")) {
+      current += command[++i];
+      hasValue = true;
+      continue;
+    }
+
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      } else {
+        current += char;
+        hasValue = true;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      hasValue = true;
+    } else if (/\s/.test(char)) {
+      if (hasValue) {
+        args.push(current);
+        current = "";
+        hasValue = false;
+      }
+    } else {
+      current += char;
+      hasValue = true;
+    }
+  }
+
+  if (hasValue) {
+    args.push(current);
+  }
+
+  return args;
+}
+
 function execPlatformCommand(command: string, args: string[]): { command: string; args: string[] } {
   if (process.platform !== "win32") {
     return { command, args };
@@ -58,8 +107,13 @@ function writeTempFile(content: string, prefix: string): string {
 }
 
 async function ensureInstalled(pi: ExtensionAPI, ctx: any): Promise<boolean> {
+  if (agentBrowserInstalled) {
+    return true;
+  }
+
   const check = await execPlatform(pi, "which", ["agent-browser"], { timeout: 5000 });
   if (check.code === 0 && check.stdout.trim()) {
+    agentBrowserInstalled = true;
     return true;
   }
 
@@ -92,6 +146,7 @@ async function ensureInstalled(pi: ExtensionAPI, ctx: any): Promise<boolean> {
   }
 
   ctx.ui.notify("agent-browser installed successfully!", "info");
+  agentBrowserInstalled = true;
   return true;
 }
 
@@ -155,6 +210,16 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
     },
 
     async execute(toolCallId, params, signal, onUpdate, ctx) {
+      const commandStr = params.command.trim();
+      const parts = parseCommand(commandStr);
+      if (parts.length === 0) {
+        return {
+          content: [{ type: "text", text: "A browser command is required." }],
+          details: { error: "empty-command" },
+          isError: true,
+        };
+      }
+
       const installed = await ensureInstalled(pi, ctx);
       if (!installed) {
         return {
@@ -164,8 +229,6 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
         };
       }
 
-      const commandStr = params.command.trim();
-      const parts = commandStr.split(/\s+/);
       const action = parts[0].toLowerCase();
 
       const result = await execPlatform(pi, "agent-browser", parts, {
@@ -186,7 +249,7 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
 
       // Screenshot: extract path, read file, return as image
       if (action === "screenshot") {
-        const pathMatch = output.match(/saved to (.+)$/i);
+        const pathMatch = output.match(/saved(?:\s+to|:)\s+(.+)$/i);
         if (pathMatch) {
           const screenshotPath = pathMatch[1].trim();
           try {

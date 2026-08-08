@@ -46,9 +46,14 @@ browser close
 
 页面发生变化后，重新执行 `snapshot -i` 获取最新的元素引用。
 
+## 查看策略
+
+插件默认先使用 `snapshot -i` 和 `get text` 读取页面结构与文字；只有需要查看布局、样式或图片时才使用 `screenshot`。
+
 ## 环境要求
 
 - Node.js 20 或更高版本
+- [agent-browser](https://www.npmjs.com/package/agent-browser)
 - 需要理解截图内容时，应使用支持视觉输入的模型
 
 手动安装依赖：
@@ -57,3 +62,7 @@ browser close
 npm install -g agent-browser
 agent-browser install
 ```
+
+## 许可证
+
+[MIT](./LICENSE)

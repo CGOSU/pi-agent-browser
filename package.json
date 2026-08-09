@@ -1,7 +1,7 @@
 {
   "name": "pi-agent-browser",
   "version": "0.1.0",
-  "description": "Browser automation tool for pi — interactive browsing, screenshots with inline vision, and session cleanup via agent-browser CLI",
+  "description": "Browser automation tool for pi — interactive browsing via Obscura MCP, screenshots with inline vision, and session cleanup",
   "keywords": [
     "pi-package",
     "browser",
@@ -9,7 +9,8 @@
     "puppeteer",
     "screenshots",
     "web-scraping",
-    "agent-browser"
+    "obscura",
+    "mcp"
   ],
   "license": "MIT",
   "author": "CGOSU",
@@ -19,6 +20,9 @@
   },
   "homepage": "https://github.com/CGOSU/pi-agent-browser#readme",
   "type": "module",
+  "scripts": {
+    "test": "node --test tests/obscura-mcp-client.test.js tests/obscura-integration.test.js"
+  },
   "engines": {
     "node": ">=20.0.0"
   },

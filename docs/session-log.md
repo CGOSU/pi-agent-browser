@@ -44,3 +44,21 @@
 - 完成：新增 `tests/obscura-integration.test.js`，默认跳过，设置 `PI_OBSCURA_INTEGRATION=1` 后使用本地 Obscura 和本地 HTTP 页面验证导航、交互引用、中文填写、JavaScript 取值和 PNG 截图。
 - 验证：默认 `npm test` 为 5 项通过、1 项跳过；使用 Obscura v0.2.0 Windows x64 渲染版运行 `PI_OBSCURA_INTEGRATION=1 npm test`，6 项全部通过。
 - 遗留：暂不支持完整页面截图和 Chromium 回退。
+
+### 2026-08-10（可用性检查）
+
+- 完成：检查当前环境中的测试、打包和浏览器启动条件。
+- 验证：`npm test` 通过 5 项、跳过 1 项；`npm pack --dry-run` 和 `git diff --check` 通过。当前环境未找到 `obscura`、`obscura.exe` 或 `PI_OBSCURA_PATH`，实际 `browser open https://example.com` 无法启动。
+- 遗留：安装 Obscura 渲染版并加入 PATH，或设置 `PI_OBSCURA_PATH` 后，才能进行真实浏览器验证。
+
+### 2026-08-10（Obscura 路径复核）
+
+- 完成：确认 Obscura 0.2.0 已安装于 `D:\\tools\\obscura\\obscura.exe`。
+- 验证：设置 `PI_OBSCURA_INTEGRATION=1 PI_OBSCURA_PATH='D:\\tools\\obscura\\obscura.exe'` 后运行 `npm test`，6 项全部通过。
+- 遗留：当前 Pi 进程环境仍未继承该路径，因此内置 `browser` 调用仍需重启 Pi，或在启动 Pi 前配置 `PI_OBSCURA_PATH`。
+
+### 2026-08-10（Vite 开发页复核）
+
+- 完成：使用 `browser open http://127.0.0.1:5173` 复核本地 Vite 页面。
+- 验证：私网访问已通过，但 Obscura 0.2.0 退出 code 101；直接捕获 stderr 确认为处理 `/@vite/client` 时的 `Module already evaluated` 断言。静态页面集成测试仍通过。
+- 遗留：当前需使用生产构建/静态预览，或等待 Obscura 修复 Vite HMR 模块兼容性。

@@ -14,4 +14,9 @@
 
 ## 已知问题
 
-暂无。
+### 2026-08-10：Obscura 0.2.0 打开 Vite 开发页会崩溃
+
+- 现象：访问包含 Vite HMR 注入脚本的页面时，Obscura 退出并返回 code 101。
+- 根因：Obscura 0.2.0 在处理 `/@vite/client` 等模块时触发 Deno 的 `Module already evaluated` 断言；不是私网权限错误。
+- 修复：优先使用生产构建或不注入 HMR 的静态预览；等待 Obscura 修复后再恢复开发服务器直连。
+- 验证：`http://127.0.0.1:5173` 返回 `/@vite/client` 和 `/@react-refresh`，带 `--allow-private-network` 直接调用 MCP 可复现崩溃；静态本地页面集成测试仍通过。

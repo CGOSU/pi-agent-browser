@@ -10,18 +10,18 @@ import {
 } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
-import {
-  ObscuraMcpClient,
-  commandToMcpCall,
-  mcpResultToPiContent,
-} from "./obscura-mcp-client.js";
+import { BrowserClient } from "./browser-client.js";
+import { commandToMcpCall, mcpResultToPiContent } from "./obscura-mcp-client.js";
 
-const TOOL_DESCRIPTION = `Browser automation via Obscura MCP.
+const TOOL_DESCRIPTION = `Browser automation via the configured Obscura MCP or PinchTab HTTP backend.
 Workflow: open URL → snapshot -i (get refs like e1) → interact → re-snapshot after page changes.
 Viewing policy:
   Use snapshot -i and get text first.
   Use screenshot only when visual layout, styling, or images are needed.
   Do not take screenshots for text-only questions.
+Backend policy:
+  The backend is selected automatically or from the user config.
+  If browser fails, report the error; do not use Playwright, Chrome, or another browser tool as a fallback.
 Commands:
   open <url> - Navigate to a URL
   snapshot [-i] - Read the page or list interactive refs
@@ -38,7 +38,7 @@ Commands:
   back|forward|reload - Navigate history
   tab [new|list|close|switch] - Manage tabs
   close - Close browser
-Obscura MCP is the browser backend; unsupported commands return an explicit error.`;
+Obscura or PinchTab is the browser backend; unsupported commands return an explicit error. Browser failures are returned directly and are never replayed through another backend.`;
 
 function writeTempFile(content: string, prefix: string): string {
   const dir = mkdtempSync(join(tmpdir(), `pi-browser-${prefix}-`));
@@ -67,13 +67,13 @@ function waitFor(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 export default function agentBrowserExtension(pi: ExtensionAPI) {
-  const browser = new ObscuraMcpClient();
+  const browser = new BrowserClient();
   pi.registerTool({
     name: "browser",
     label: "Browser",
     description: TOOL_DESCRIPTION,
     parameters: Type.Object({
-      command: Type.String({ description: "Obscura browser command (for example: open <url>, snapshot -i, click @e1)" }),
+      command: Type.String({ description: "Browser command (for example: open <url>, snapshot -i, click @e1)" }),
     }),
 
     renderCall(args: { command: string }, theme: any) {
@@ -135,21 +135,25 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
     async execute(_toolCallId, params, signal) {
       const commandStr = params.command.trim();
       let call;
+      let execution;
 
       try {
+        // Validate the shared command surface before selecting or probing a backend.
+        // Fixed waits remain local and do not need a browser connection.
         call = commandToMcpCall(commandStr);
         if (call.localWaitMs !== undefined) {
           await waitFor(call.localWaitMs, signal);
           return {
             content: [{ type: "text", text: `Waited ${call.localWaitMs}ms` }],
-            details: { command: commandStr, action: call.action },
+            details: { command: commandStr, action: call.action, backend: "local" },
           };
         }
 
-        const result = await browser.callTool(call.tool, call.arguments, {
+        execution = await browser.execute(commandStr, {
           signal,
           timeout: 60000,
         });
+        const result = execution.result;
         const content = mcpResultToPiContent(result);
         const output = content
           .filter((item: any) => item.type === "text")
@@ -177,8 +181,9 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
           content: finalContent,
           details: {
             command: commandStr,
-            action: call.action,
-            tool: call.tool,
+            action: execution.action,
+            tool: execution.tool,
+            backend: execution.backend,
             truncated: truncation.truncated,
           },
         };
@@ -186,14 +191,14 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
         const message = error?.message || String(error);
         return {
           content: [{ type: "text", text: message }],
-          details: { error: message, command: commandStr, action: call?.action },
+          details: { error: message, command: commandStr, action: execution?.action || call?.action, backend: execution?.backend },
           isError: true,
         };
       }
     },
   });
 
-  // Clean up the Obscura MCP process on session exit.
+  // Clean up backend resources on session exit; PinchTab itself remains running.
   pi.on("session_shutdown", async () => {
     await browser.close();
   });

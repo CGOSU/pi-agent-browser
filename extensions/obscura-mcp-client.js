@@ -326,6 +326,7 @@ export class ObscuraMcpClient {
     this.env = { ...(options.env || process.env) };
     this.spawnImpl = options.spawnImpl || spawn;
     this.defaultTimeout = options.defaultTimeout || DEFAULT_TIMEOUT;
+    this.startupTimeout = options.startupTimeout || Math.min(this.defaultTimeout, 10_000);
     this.child = null;
     this.readyPromise = null;
     this.pending = new Map();
@@ -339,7 +340,7 @@ export class ObscuraMcpClient {
       if (options.signal?.aborted) {
         throw new Error("Browser command cancelled.");
       }
-      await this.ensureReady(options.signal);
+      await this.ensureReady(options.signal, options.startupTimeout || this.startupTimeout);
       const response = await this.request(
         "tools/call",
         { name, arguments: arguments_ || {} },
@@ -364,7 +365,7 @@ export class ObscuraMcpClient {
     await this.queue.catch(() => undefined);
   }
 
-  async ensureReady(signal) {
+  async ensureReady(signal, timeout = this.startupTimeout) {
     if (this.readyPromise) {
       return this.readyPromise;
     }
@@ -378,7 +379,7 @@ export class ObscuraMcpClient {
           capabilities: {},
           clientInfo: { name: "pi-agent-browser", version: "0.1.0" },
         },
-        { signal },
+        { signal, timeout },
       );
       if (response.error) {
         throw new Error(mcpErrorMessage(response));

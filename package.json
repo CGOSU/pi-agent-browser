@@ -1,7 +1,7 @@
 {
   "name": "pi-agent-browser",
   "version": "0.1.0",
-  "description": "Browser automation tool for pi — interactive browsing via Obscura MCP, screenshots with inline vision, and session cleanup",
+  "description": "Browser automation tool for pi — interactive browsing via Obscura MCP or PinchTab HTTP, screenshots with inline vision, and session cleanup",
   "keywords": [
     "pi-package",
     "browser",
@@ -10,6 +10,7 @@
     "screenshots",
     "web-scraping",
     "obscura",
+    "pinchtab",
     "mcp"
   ],
   "license": "MIT",
@@ -21,7 +22,7 @@
   "homepage": "https://github.com/CGOSU/pi-agent-browser#readme",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/obscura-mcp-client.test.js tests/obscura-integration.test.js"
+    "test": "node --test tests/browser-client.test.js tests/pinchtab-client.test.js tests/obscura-mcp-client.test.js tests/obscura-integration.test.js tests/pinchtab-integration.test.js"
   },
   "engines": {
     "node": ">=20.0.0"

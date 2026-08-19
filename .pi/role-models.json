@@ -1,8 +1,10 @@
 {
   "mode": "auto",
+  "workflowMode": "auto",
+  "workflowExecutor": "local",
   "architect": {
     "provider": "openai-codex",
-    "model": "gpt-5.6-sol",
+    "model": "gpt-5.6-terra",
     "thinkingLevel": "max"
   },
   "developer-test": {

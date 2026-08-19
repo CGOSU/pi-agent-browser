@@ -33,7 +33,9 @@
     "README.md"
   ],
   "pi": {
-    "extensions": ["extensions/agent-browser.ts"]
+    "extensions": [
+      "extensions/agent-browser"
+    ]
   },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": "*",

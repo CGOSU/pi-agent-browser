@@ -7,7 +7,7 @@
 
 ## 当前事实
 
-- `extensions/agent-browser.ts` 只注册名为 `browser` 的工具，并通过 `BrowserClient` 统一调度后端。
+- `extensions/index.ts`（原 `extensions/agent-browser.ts`）注册名为 `browser` 的工具，并通过 `BrowserClient` 统一调度后端；pi 对 index 入口折叠显示，加载名即为包名。
 - 默认 `auto` 模式首次操作时先健康检查 `http://127.0.0.1:9867` 的 PinchTab，再尝试 Obscura；选定后端后会话内锁定，不重放已发送操作。
 - 配置文件为可选项：Windows 默认 `%APPDATA%/pi-agent-browser/config.json`，其他平台默认 `${XDG_CONFIG_HOME:-~/.config}/pi-agent-browser/config.json`；`PI_BROWSER_CONFIG` 可覆盖路径。
 - 环境变量逐字段覆盖用户配置；保留 `PI_OBSCURA_*`，并支持 `PI_BROWSER_BACKEND`、`PI_PINCHTAB_URL`、`PINCHTAB_TOKEN` 和 `PINCHTAB_SESSION`。

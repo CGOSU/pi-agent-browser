@@ -34,7 +34,7 @@
   ],
   "pi": {
     "extensions": [
-      "extensions/agent-browser"
+      "extensions/index.ts"
     ]
   },
   "peerDependencies": {

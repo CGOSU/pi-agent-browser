@@ -74,3 +74,9 @@
 - 完成：在 README 增加 Windows PowerShell 查看项目环境变量和解析后有效配置的命令，并提醒重启 Pi 及保护 PinchTab 凭据。
 - 验证：`git diff --check` 通过。
 - 遗留：无。
+
+### 2026-08-19（扩展入口改名）
+
+- 完成：将扩展入口从 `extensions/agent-browser.ts` 迁移为 `extensions/index.ts`，并更新 `package.json` 的 `pi.extensions` 指向；pi 对 index 入口折叠显示，加载名即为包名，不再出现 `:agent-browser.ts`。
+- 验证：`npm test` 21 项中 19 项通过、2 项集成测试跳过；`npm pack --dry-run` 已包含 `extensions/index.ts`。
+- 遗留：若需更优雅的加载前缀，再调整 `package.json` 的 `name` 并同步 README 安装命令。

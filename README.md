@@ -105,6 +105,24 @@ browser close
 
 PinchTab 和 MCP 控制面应仅暴露在可信的本地环境中。页面内容应视为不可信数据；不要把令牌写入配置文件或提交到仓库。插件不负责 PinchTab 服务的生命周期管理。
 
+### 查看运行时生效值
+
+环境变量由启动 Pi 的 Node.js 进程继承。Windows PowerShell 中查看项目相关变量：
+
+```powershell
+Get-ChildItem Env: |
+  Where-Object Name -match '^(PI_BROWSER|PI_OBSCURA|PI_PINCHTAB|PINCHTAB_)' |
+  Sort-Object Name
+```
+
+查看项目合并配置文件、环境变量和默认值后的有效配置：
+
+```powershell
+node --input-type=module -e "import { resolveBrowserConfig } from './extensions/browser-client.js'; console.log(JSON.stringify(resolveBrowserConfig(), null, 2))"
+```
+
+修改环境变量后需要重启 Pi。`PINCHTAB_TOKEN` 和 `PINCHTAB_SESSION` 是敏感凭据，不要打印、提交或写入配置文件。
+
 ## 查看策略
 
 插件默认先使用 `snapshot -i` 和 `get text` 读取页面结构与文字；只有需要查看布局、样式或图片时才使用 `screenshot`。

@@ -68,3 +68,9 @@
 - 完成：增加跨平台用户配置、PinchTab HTTP 客户端、自动后端健康选择与会话锁；保留 Obscura MCP，并在工具描述中明确失败时不改用 Playwright/Chrome。增加 PinchTab 默认跳过的真实本地页面集成测试。
 - 验证：`npm test`：21 项中 19 项通过、2 项明确跳过；`npm pack --dry-run`：通过；`git diff --check`：通过；`node --check extensions/browser-client.js && node --check extensions/pinchtab-client.js && node --check extensions/obscura-mcp-client.js`：通过。
 - 遗留：本次未启用 `PI_PINCHTAB_INTEGRATION=1`，因此未执行真实 PinchTab 服务测试。
+
+### 2026-08-19（运行时环境变量）
+
+- 完成：在 README 增加 Windows PowerShell 查看项目环境变量和解析后有效配置的命令，并提醒重启 Pi 及保护 PinchTab 凭据。
+- 验证：`git diff --check` 通过。
+- 遗留：无。

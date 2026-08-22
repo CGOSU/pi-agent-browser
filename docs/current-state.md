@@ -3,20 +3,26 @@
 ## 项目
 
 - 名称：`pi-agent-browser`
-- 定位：为 pi 提供单一 `browser` 工具，支持 Obscura MCP 和 PinchTab HTTP 浏览器后端。
+- 定位：为 `pi` 提供单一 `browser` 工具，通过 `agent-browser` CLI 控制无头 Chrome。
 
 ## 当前事实
 
-- `extensions/index.ts`（原 `extensions/agent-browser.ts`）注册名为 `browser` 的工具，并通过 `BrowserClient` 统一调度后端；pi 对 index 入口折叠显示，加载名即为包名。
-- 默认使用 `http://127.0.0.1:9867` 的 PinchTab（由 PinchTab 控制 Chrome）；首次调用时会查找本地二进制并自动启动，默认 `installPolicy=prompt` 不静默下载；只有显式设置 `installPolicy=always` 才会下载并校验固定版本官方二进制。只有显式设置 `backend=auto` 或 `PI_BROWSER_BACKEND=auto` 才会在 PinchTab 不可用时尝试 Obscura。
-- 配置文件为可选项：Windows 默认 `%APPDATA%/pi-agent-browser/config.json`，其他平台默认 `${XDG_CONFIG_HOME:-~/.config}/pi-agent-browser/config.json`；`PI_BROWSER_CONFIG` 可覆盖路径。
-- 环境变量逐字段覆盖用户配置；保留 `PI_OBSCURA_*`，并支持 `PI_BROWSER_BACKEND`、`PI_PINCHTAB_PATH`、`PI_PINCHTAB_URL`、`PINCHTAB_TOKEN` 和 `PINCHTAB_SESSION`。
-- PinchTab 通过 Node 内置 `fetch` 调用 HTTP API；插件只自动启动自己发现或安装的本地 PinchTab 进程，不接管外部服务，也不落盘 PinchTab 凭据。缺少二进制时错误会提供固定官方 Release 地址和 `PI_PINCHTAB_PATH` 指引。
-- Obscura 通过 stdio MCP 调用，启动探测有有限超时；缺少后端时报告诊断错误，不自动切换到 Playwright 或 Chrome。
-- 支持导航、快照、交互、表单、滚动、页面信息、截图、JavaScript、历史和标签页操作；截图可返回 Pi inline image。
-- 真实 Obscura/PinchTab 集成测试默认跳过，分别由 `PI_OBSCURA_INTEGRATION=1` 和 `PI_PINCHTAB_INTEGRATION=1` 启用。
-- 本机自行编译的 Obscura main（HEAD `39fe4d2`，Cargo 版本字符串仍为 `0.1.0`）打开 GitHub PR 页面仍可能以 Windows `0xC00000FD`（stack overflow）退出；当前复现日志落在 CSS selector matching/render 阶段，不能再归因于已包含修复的 ES module 重复求值缺陷。
+- `extensions/index.ts` 注册 `browser` 工具，并直接安全调用 PATH 中的 `agent-browser` 可执行文件。
+- Windows 下会解析 npm 生成的 `agent-browser.cmd`，直接启动其目标可执行文件，不让用户命令参数经过 `cmd.exe`。
+- 默认不自动安装 npm 包、不下载浏览器、不启动 PinchTab 或 Obscura。
+- `agent-browser` 本身负责 Chrome for Testing 的安装、无头启动、网络代理和浏览器会话生命周期。
+- 截图会读取 agent-browser 生成的图片并作为 Pi inline image 返回；过大的文本输出会保存到临时文件并截断展示。
+- `agent-browser` 缺失时只返回手动安装提示：`npm install -g agent-browser && agent-browser install`。
+
+## 验证状态
+
+- `agent-browser doctor`：本机 headless launch 通过。
+- `agent-browser open https://www.baidu.com`：成功。
+- `agent-browser open https://github.com/openai/codex/pull/37261` 后执行 `snapshot -i`：成功。
+- `npm test`：CLI 解析测试通过。
+- `pi -e ./extensions/index.ts --help`：扩展加载通过。
 
 ## 未完成事项
 
-- Obscura main 的 GitHub 复杂页面栈溢出仍需上游进一步定位/修复；默认已切换到 PinchTab，自动下载仅在 `installPolicy=always` 时启用，真实后端集成测试是否执行取决于本机是否主动提供对应服务。
+- 尚未发布新的 npm 版本；用户通过 Git 或本地路径安装时可直接使用当前实现。
+- Obscura、PinchTab 相关历史诊断保留在 `docs/decisions.md`、`docs/pitfalls.md` 和 `docs/session-log.md`，不再参与当前运行时。

@@ -8,6 +8,12 @@
 
 ## 已确认决策
 
+### 2026-08-22：恢复 agent-browser CLI 为默认后端
+
+- 决定：`browser` 只调用 PATH 中的 `agent-browser` CLI，默认使用其无头 Chrome；不再在运行时启动、下载或配置 PinchTab/Obscura。
+- 原因：实际使用中 PinchTab 的 token、Chrome 路径、IDPI 域名白名单和服务生命周期增加了与“打开网页”无关的配置成本；agent-browser 已在本机成功打开百度和 GitHub PR 页面。
+- 约束：缺少 CLI 时只给出 `npm install -g agent-browser && agent-browser install` 提示；Windows 解析 npm `.cmd` shim 后直接启动目标程序，避免将命令参数交给 `cmd.exe`；旧的 PinchTab/Obscura 默认后端决策由本条替代，但历史记录保留。
+
 ### 2026-08-09：浏览器后端改用 Obscura MCP
 
 - 决定：保留 pi 的 `browser` 工具和命令接口，内部改为启动 `obscura mcp` 并通过 stdio MCP 调用。

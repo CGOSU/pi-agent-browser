@@ -100,3 +100,9 @@
 - 完成：固定官方 PinchTab 资产地址；缺少本地二进制或自动下载失败时，错误现在提供官方 Release 地址和 `PI_PINCHTAB_PATH` 配置指引。README 增加 Windows x64 手动下载、临时和永久环境变量设置示例。
 - 验证：`npm test`（24 项通过、2 项集成测试跳过）；`git diff --check` 通过。
 - 遗留：本机未完成真实 PinchTab + Chrome 集成验证。
+
+### 2026-08-22（恢复 agent-browser CLI 默认后端）
+
+- 完成：移除 PinchTab/Obscura 运行时代码和测试，恢复 `agent-browser` CLI 适配器；默认使用无头 Chrome，不自动安装依赖或下载浏览器。Windows npm shim 解析后直接启动目标可执行文件。
+- 验证：`agent-browser doctor`（headless launch 通过）；`agent-browser open https://www.baidu.com`（成功）；`agent-browser open https://github.com/openai/codex/pull/37261` + `snapshot -i`（成功）；`npm test`；`pi -e ./extensions/index.ts --help`。
+- 遗留：尚未发布新的 npm 版本。

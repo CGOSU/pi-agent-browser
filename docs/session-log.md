@@ -94,3 +94,9 @@
 - 完成：PinchTab 首次健康检查连接失败时，自动启动配置或 PATH 中的 `pinchtab server`；默认 `prompt` 不下载，`always` 才从固定版本官方 Release 下载并校验当前平台二进制，轮询 `/health`，并在 Pi 关闭时清理由插件启动的进程。
 - 约束：`never|prompt|always` 控制下载策略；外部已运行的服务不会被接管或停止；远程服务不会触发下载；下载使用跨进程锁。
 - 验证：`npm test`（22 项通过、2 项集成测试跳过）；`git diff --check` 通过。
+
+### 2026-08-22（PinchTab 手动安装指引）
+
+- 完成：固定官方 PinchTab 资产地址；缺少本地二进制或自动下载失败时，错误现在提供官方 Release 地址和 `PI_PINCHTAB_PATH` 配置指引。README 增加 Windows x64 手动下载、临时和永久环境变量设置示例。
+- 验证：`npm test`（24 项通过、2 项集成测试跳过）；`git diff --check` 通过。
+- 遗留：本机未完成真实 PinchTab + Chrome 集成验证。

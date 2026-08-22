@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { installPinchtab } from "./pinchtab-installer.js";
+import { installPinchtab, pinchtabDownloadUrl } from "./pinchtab-installer.js";
 import { parseCommand } from "./obscura-mcp-client.js";
 
 export const DEFAULT_PINCHTAB_SERVER = "http://127.0.0.1:9867";
@@ -21,6 +21,16 @@ function startupError(error, state) {
   return new Error(
     `PinchTab failed to start: ${detail || error?.message || "server did not become healthy"}`,
   );
+}
+
+function manualInstallHint(platform, arch) {
+  let url;
+  try {
+    url = pinchtabDownloadUrl(platform, arch);
+  } catch {
+    url = "https://github.com/pinchtab/pinchtab/releases";
+  }
+  return `Download PinchTab from ${url}, then set PI_PINCHTAB_PATH to the downloaded executable.`;
 }
 
 function normalizeRef(value) {
@@ -329,6 +339,7 @@ export class PinchtabClient {
     this.installImpl = options.installImpl || installPinchtab;
     this.spawnImpl = options.spawnImpl || spawn;
     this.platform = options.platform || process.platform;
+    this.arch = options.arch || process.arch;
     this.tabId = options.tabId;
     this.lastRequest = null;
     this.serverProcess = undefined;
@@ -350,13 +361,17 @@ export class PinchtabClient {
   async startServer(options = {}) {
     if (this.serverProcess && !this.serverProcess.exited) return;
     if (!this.executable && this.installPolicy === "always" && this.server === DEFAULT_PINCHTAB_SERVER) {
-      this.executable = await this.installImpl({ env: this.env, platform: this.platform });
+      try {
+        this.executable = await this.installImpl({ env: this.env, platform: this.platform, arch: this.arch });
+      } catch (error) {
+        throw new Error(`${error?.message || String(error)} ${manualInstallHint(this.platform, this.arch)}`);
+      }
     }
     if (!this.executable) {
-      const installHint = this.installPolicy === "prompt"
-        ? "set PI_PINCHTAB_INSTALL_POLICY=always to download it"
-        : "install PinchTab or set PI_PINCHTAB_PATH to its executable";
-      throw new Error(`PinchTab is not running at ${this.server}; ${installHint}.`);
+      const installHint = this.server === DEFAULT_PINCHTAB_SERVER
+        ? manualInstallHint(this.platform, this.arch)
+        : `start the PinchTab service at ${this.server}`;
+      throw new Error(`PinchTab is not running at ${this.server}. ${installHint}`);
     }
     if (!this.startPromise) {
       this.startPromise = this.spawnServer()

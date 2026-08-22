@@ -14,11 +14,21 @@ pi install npm:pi-agent-browser
 pi -e npm:pi-agent-browser
 ```
 
-默认使用本机 PinchTab（默认 `http://127.0.0.1:9867`，由 PinchTab 控制 Chrome）。首次调用时若发现 PinchTab 未运行，插件会优先查找本地可执行文件；默认策略 `prompt` 不会静默下载，而是提示设置 `PI_PINCHTAB_INSTALL_POLICY=always`。`always` 模式从固定版本的 PinchTab 官方 Release 下载并校验当前平台版本，然后执行 `pinchtab server`；`never` 模式完全禁止下载。插件退出时只清理由自己启动的服务。Obscura 仍可通过配置或 `PI_BROWSER_BACKEND=obscura` 显式启用；后端一旦选定，就会在当前会话中锁定。
+默认使用本机 PinchTab（默认 `http://127.0.0.1:9867`，由 PinchTab 控制 Chrome）。首次调用时若发现 PinchTab 未运行，插件会优先查找本地可执行文件；默认策略 `prompt` 不会静默下载，而是给出固定官方下载地址和 `PI_PINCHTAB_PATH` 配置指引。`always` 模式从固定版本的 PinchTab 官方 Release 下载并校验当前平台版本，然后执行 `pinchtab server`；`never` 模式完全禁止下载。插件退出时只清理由自己启动的服务。Obscura 仍可通过配置或 `PI_BROWSER_BACKEND=obscura` 显式启用；后端一旦选定，就会在当前会话中锁定。
 
 ### 后端准备
 
-- **PinchTab**：首次调用时自动启动本地可执行文件；找不到时默认不下载，设置 `PI_PINCHTAB_INSTALL_POLICY=always` 才会从固定版本的官方 Release 下载并校验。如果配置的是远程 HTTP 服务，则需要用户自行启动服务。
+Windows PowerShell 手动安装示例：
+
+```powershell
+# 将下载的文件移动到稳定路径后设置
+$env:PI_PINCHTAB_PATH = "D:\tools\pinchtab\pinchtab.exe"
+
+# 需要永久保存时使用；执行后重启终端和 pi
+setx PI_PINCHTAB_PATH "D:\tools\pinchtab\pinchtab.exe"
+```
+
+- **PinchTab**：首次调用时自动启动本地可执行文件；找不到时默认不下载，错误中会提供手动下载地址。Windows x64 可下载 [PinchTab v0.15.1](https://github.com/pinchtab/pinchtab/releases/download/v0.15.1/pinchtab-windows-amd64.exe)，然后配置 `PI_PINCHTAB_PATH`。设置 `PI_PINCHTAB_INSTALL_POLICY=always` 才会启用自动下载；如果配置的是远程 HTTP 服务，则需要用户自行启动服务。
 - **Obscura**：需要用户预先安装 [Obscura](https://github.com/h4ckf0r0day/obscura) 渲染版；Windows 可将目录加入 `PATH`，也可用 `PI_OBSCURA_PATH` 指定完整路径。
 
 如果两个后端都不可用，工具会报告包含检查地址和安装提示的错误；不会自动改用 Playwright、Chrome 或其他浏览器工具。
@@ -96,6 +106,7 @@ browser close
 | 环境变量 | 说明 |
 | --- | --- |
 | `PI_BROWSER_BACKEND=auto\|pinchtab\|obscura` | 后端模式 |
+| `PI_PINCHTAB_PATH` | 手动下载的 PinchTab 可执行文件路径，推荐使用绝对路径 |
 | `PI_PINCHTAB_URL` | PinchTab HTTP 地址 |
 | `PI_PINCHTAB_INSTALL_POLICY=never\|prompt\|always` | 控制官方 PinchTab 下载策略，默认 `prompt` |
 | `PINCHTAB_TOKEN` | PinchTab Bearer 凭据，仅从环境透传，不写入配置 |

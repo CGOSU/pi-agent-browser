@@ -64,6 +64,10 @@ export function pinchtabAsset(platform = process.platform, arch = process.arch) 
   return assetFor(platform, arch)[0];
 }
 
+export function pinchtabDownloadUrl(platform = process.platform, arch = process.arch) {
+  return `${RELEASE_BASE}/${pinchtabAsset(platform, arch)}`;
+}
+
 export async function installPinchtab({
   env = process.env,
   platform = process.platform,

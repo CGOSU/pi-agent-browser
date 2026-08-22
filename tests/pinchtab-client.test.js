@@ -11,7 +11,7 @@ import {
   commandToPinchtabCall,
   pinchtabServerUrl,
 } from "../extensions/pinchtab-client.js";
-import { installPinchtab } from "../extensions/pinchtab-installer.js";
+import { installPinchtab, pinchtabDownloadUrl } from "../extensions/pinchtab-installer.js";
 
 function response(body, status = 200) {
   const text = typeof body === "string" ? body : JSON.stringify(body);
@@ -109,6 +109,37 @@ test("downloads and verifies the official PinchTab asset", async () => {
     }),
   });
   assert.deepEqual(readFileSync(path), binary);
+});
+
+test("reports a fixed manual download URL when PinchTab is missing", async () => {
+  const url = pinchtabDownloadUrl("win32", "x64");
+  assert.equal(url, "https://github.com/pinchtab/pinchtab/releases/download/v0.15.1/pinchtab-windows-amd64.exe");
+
+  const client = new PinchtabClient({
+    platform: "win32",
+    arch: "x64",
+    env: {},
+    fetchImpl: async () => { throw new Error("PinchTab request failed: connect ECONNREFUSED"); },
+  });
+  await assert.rejects(
+    client.health({ timeout: 100 }),
+    new RegExp(`${url.replaceAll(".", "\\.")}.*PI_PINCHTAB_PATH`),
+  );
+});
+
+test("includes manual installation guidance when automatic download fails", async () => {
+  const client = new PinchtabClient({
+    platform: "win32",
+    arch: "x64",
+    installPolicy: "always",
+    env: {},
+    installImpl: async () => { throw new Error("fetch failed"); },
+    fetchImpl: async () => { throw new Error("PinchTab request failed: connect ECONNREFUSED"); },
+  });
+  await assert.rejects(
+    client.health({ timeout: 100 }),
+    /fetch failed.*github\.com\/pinchtab\/pinchtab\/releases\/download\/v0\.15\.1\/pinchtab-windows-amd64\.exe.*PI_PINCHTAB_PATH/,
+  );
 });
 
 test("starts PinchTab on the first health check when the service is unavailable", async () => {

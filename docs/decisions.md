@@ -19,7 +19,7 @@
 
 - 决定：默认 PinchTab 后端首次健康检查遇到连接失败时，先查找本地可执行文件并启动 `pinchtab server`；默认 `installPolicy=prompt` 不静默下载，只有 `always` 才从固定版本的官方 Release 下载并校验当前平台二进制，`never` 完全禁止下载。Pi 退出时只停止由本插件启动的进程。
 - 原因：保留零窗口启动便利性，同时避免运行时未经确认改变本机软件供应链。
-- 约束：只访问固定官方 GitHub Release 并校验固定 SHA-256；已有外部服务不启动第二份；远程 PinchTab 仅通过 HTTP 使用；下载使用跨进程锁。
+- 约束：只访问固定官方 GitHub Release 并校验固定 SHA-256；已有外部服务不启动第二份；远程 PinchTab 仅通过 HTTP 使用；下载使用跨进程锁；缺少二进制或自动下载失败时，错误提供官方资产地址，推荐用户通过 `PI_PINCHTAB_PATH` 手动安装。
 
 ### 2026-08-18：增加 PinchTab HTTP 后端和跨平台用户配置
 

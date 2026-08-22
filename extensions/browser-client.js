@@ -19,6 +19,7 @@ export const DEFAULT_BROWSER_CONFIG = Object.freeze({
   pinchtab: Object.freeze({
     path: "",
     server: DEFAULT_PINCHTAB_SERVER,
+    installPolicy: "prompt",
   }),
 });
 
@@ -95,6 +96,9 @@ function validateFileConfig(fileConfig, path) {
   for (const key of ["path", "server"]) {
     if (pinchtab[key] !== undefined) nonEmptyString(pinchtab[key], `${path}.pinchtab.${key}`);
   }
+  if (pinchtab.installPolicy !== undefined && !["never", "prompt", "always"].includes(pinchtab.installPolicy)) {
+    throw new Error(`${path}.pinchtab.installPolicy must be never, prompt, or always.`);
+  }
 }
 
 export function readBrowserConfig(options = {}) {
@@ -134,6 +138,7 @@ export function resolveBrowserConfig(options = {}) {
     ["PI_OBSCURA_USER_AGENT", obscura, "userAgent"],
     ["PI_PINCHTAB_PATH", pinchtab, "path"],
     ["PI_PINCHTAB_URL", pinchtab, "server"],
+    ["PI_PINCHTAB_INSTALL_POLICY", pinchtab, "installPolicy"],
   ];
   for (const [envName, target, key] of stringEnvFields) {
     const value = envOverride(env, envName);
@@ -147,6 +152,10 @@ export function resolveBrowserConfig(options = {}) {
   for (const [envName, target, key] of booleanEnvFields) {
     const value = envOverride(env, envName);
     if (value !== undefined) target[key] = parseEnvBoolean(value, envName);
+  }
+
+  if (!["never", "prompt", "always"].includes(pinchtab.installPolicy)) {
+    throw new Error("PI_PINCHTAB_INSTALL_POLICY must be never, prompt, or always.");
   }
 
   return {
@@ -213,7 +222,10 @@ export class BrowserClient {
     this.pinchtab = options.pinchtabClient || new PinchtabClient({
       server: this.config.pinchtab.server,
       env: this.env,
+      executable: this.config.pinchtab.path || discoverExecutable("pinchtab", { env: this.env }),
+      installPolicy: this.config.pinchtab.installPolicy,
       defaultTimeout: options.defaultTimeout,
+      startupTimeout: options.startupTimeout || 10_000,
     });
     this.selectedBackend = undefined;
     this.selectionPromise = undefined;

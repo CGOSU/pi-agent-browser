@@ -1,4 +1,9 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { EventEmitter } from "node:events";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import {
   DEFAULT_PINCHTAB_SERVER,
@@ -6,6 +11,7 @@ import {
   commandToPinchtabCall,
   pinchtabServerUrl,
 } from "../extensions/pinchtab-client.js";
+import { installPinchtab } from "../extensions/pinchtab-installer.js";
 
 function response(body, status = 200) {
   const text = typeof body === "string" ? body : JSON.stringify(body);
@@ -83,6 +89,60 @@ test("maps the browser command surface to PinchTab HTTP operations", () => {
   assert.deepEqual(commandToPinchtabCall("tab close", { tabId: "tab-1" }).body, { tabId: "tab-1" });
   assert.equal(commandToPinchtabCall("tab 2").index, 2);
   assert.deepEqual(commandToPinchtabCall("close", { tabId: "tab-1" }).body, { tabId: "tab-1" });
+});
+
+test("downloads and verifies the official PinchTab asset", async () => {
+  const binary = Buffer.from("pinchtab-test-binary");
+  const checksum = createHash("sha256").update(binary).digest("hex");
+  const home = mkdtempSync(join(tmpdir(), "pi-pinchtab-install-"));
+  const path = await installPinchtab({
+    home,
+    platform: "linux",
+    arch: "x64",
+    env: {},
+    version: "v-test",
+    manifest: { "linux/x64": ["pinchtab-test", checksum] },
+    releaseBase: "https://release",
+    fetchImpl: async (url) => ({
+      ok: true,
+      async arrayBuffer() { return binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength); },
+    }),
+  });
+  assert.deepEqual(readFileSync(path), binary);
+});
+
+test("starts PinchTab on the first health check when the service is unavailable", async () => {
+  let started = false;
+  let killed = false;
+  const child = new EventEmitter();
+  child.stderr = new EventEmitter();
+  child.kill = () => {
+    killed = true;
+    child.emit("exit", 0, null);
+  };
+  const client = new PinchtabClient({
+    executable: "/tools/pinchtab",
+    env: {},
+    startupTimeout: 500,
+    spawnImpl(path, args, options) {
+      assert.equal(path, "/tools/pinchtab");
+      assert.deepEqual(args, ["server"]);
+      assert.equal(options.stdio[2], "pipe");
+      started = true;
+      queueMicrotask(() => child.emit("spawn"));
+      return child;
+    },
+    fetchImpl: async (url) => {
+      assert.equal(new URL(url).pathname, "/health");
+      if (!started) throw new Error("PinchTab request failed: connect ECONNREFUSED");
+      return response({ status: "ok" });
+    },
+  });
+
+  await client.health({ timeout: 500 });
+  assert.equal(started, true);
+  await client.close();
+  assert.equal(killed, true);
 });
 
 test("calls PinchTab HTTP endpoints, tracks tabs, and returns inline screenshots", async () => {

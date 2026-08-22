@@ -1,8 +1,27 @@
+import { spawn } from "node:child_process";
+import { installPinchtab } from "./pinchtab-installer.js";
 import { parseCommand } from "./obscura-mcp-client.js";
 
 export const DEFAULT_PINCHTAB_SERVER = "http://127.0.0.1:9867";
 const DEFAULT_TIMEOUT = 60_000;
+const STARTUP_TIMEOUT = 10_000;
+const STARTUP_POLL_MS = 100;
 const MAX_WAIT_MS = 30_000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isConnectionFailure(error) {
+  return error?.message?.startsWith("PinchTab request failed:");
+}
+
+function startupError(error, state) {
+  const detail = state?.stderr?.trim();
+  return new Error(
+    `PinchTab failed to start: ${detail || error?.message || "server did not become healthy"}`,
+  );
+}
 
 function normalizeRef(value) {
   return value.startsWith("@") ? value.slice(1) : value;
@@ -304,13 +323,112 @@ export class PinchtabClient {
       throw new Error("PinchTab requires a fetch implementation (Node.js 20 or newer).");
     }
     this.defaultTimeout = options.defaultTimeout || DEFAULT_TIMEOUT;
+    this.startupTimeout = options.startupTimeout || STARTUP_TIMEOUT;
+    this.executable = options.executable;
+    this.installPolicy = options.installPolicy || "prompt";
+    this.installImpl = options.installImpl || installPinchtab;
+    this.spawnImpl = options.spawnImpl || spawn;
+    this.platform = options.platform || process.platform;
     this.tabId = options.tabId;
     this.lastRequest = null;
+    this.serverProcess = undefined;
+    this.startPromise = undefined;
   }
 
   async health(options = {}) {
-    await this.request("GET", "/health", options);
-    return true;
+    try {
+      await this.request("GET", "/health", options);
+      return true;
+    } catch (error) {
+      if (!isConnectionFailure(error)) throw error;
+      await this.startServer(options);
+      await this.waitForHealth(options);
+      return true;
+    }
+  }
+
+  async startServer(options = {}) {
+    if (this.serverProcess && !this.serverProcess.exited) return;
+    if (!this.executable && this.installPolicy === "always" && this.server === DEFAULT_PINCHTAB_SERVER) {
+      this.executable = await this.installImpl({ env: this.env, platform: this.platform });
+    }
+    if (!this.executable) {
+      const installHint = this.installPolicy === "prompt"
+        ? "set PI_PINCHTAB_INSTALL_POLICY=always to download it"
+        : "install PinchTab or set PI_PINCHTAB_PATH to its executable";
+      throw new Error(`PinchTab is not running at ${this.server}; ${installHint}.`);
+    }
+    if (!this.startPromise) {
+      this.startPromise = this.spawnServer()
+        .finally(() => {
+          this.startPromise = undefined;
+        });
+    }
+    await this.startPromise;
+  }
+
+  async spawnServer() {
+    let child;
+    try {
+      child = this.spawnImpl(this.executable, ["server"], {
+        env: this.env,
+        stdio: ["ignore", "ignore", "pipe"],
+        windowsHide: true,
+        shell: this.platform === "win32" && this.executable.toLowerCase().endsWith(".cmd"),
+      });
+    } catch (error) {
+      throw startupError(error);
+    }
+
+    const state = { child, stderr: "", exited: false };
+    this.serverProcess = state;
+    child.stderr?.setEncoding?.("utf8");
+    child.stderr?.on?.("data", (chunk) => {
+      state.stderr = `${state.stderr}${chunk}`.slice(-2_000);
+    });
+    child.once?.("exit", (code, signal) => {
+      state.exited = true;
+      state.exit = { code, signal };
+    });
+
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      const resolveOnce = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      const rejectOnce = (error) => {
+        if (settled) return;
+        settled = true;
+        reject(startupError(error, state));
+      };
+      child.once?.("spawn", resolveOnce);
+      child.once?.("error", rejectOnce);
+      if (typeof child.once !== "function") resolveOnce();
+    });
+  }
+
+  async waitForHealth(options = {}) {
+    const timeout = Math.max(1, Number(options.timeout) || this.startupTimeout);
+    const deadline = Date.now() + timeout;
+    let lastError;
+    while (Date.now() < deadline) {
+      const remaining = deadline - Date.now();
+      if (this.serverProcess?.exited) throw startupError(lastError, this.serverProcess);
+      try {
+        await this.request("GET", "/health", {
+          ...options,
+          timeout: Math.min(1_000, remaining),
+        });
+        return true;
+      } catch (error) {
+        lastError = error;
+        if (!isConnectionFailure(error)) throw error;
+      }
+      await sleep(Math.min(STARTUP_POLL_MS, Math.max(1, deadline - Date.now())));
+    }
+    throw startupError(lastError, this.serverProcess);
   }
 
   async callCommand(command, options = {}) {
@@ -424,5 +542,21 @@ export class PinchtabClient {
 
   async close() {
     this.tabId = undefined;
+    await this.startPromise?.catch(() => undefined);
+    const state = this.serverProcess;
+    this.serverProcess = undefined;
+    if (!state || state.exited || typeof state.child.kill !== "function") return;
+    await new Promise((resolve) => {
+      const timer = setTimeout(resolve, 1_000);
+      state.child.once?.("exit", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      state.child.kill();
+      if (state.exited) {
+        clearTimeout(timer);
+        resolve();
+      }
+    });
   }
 }

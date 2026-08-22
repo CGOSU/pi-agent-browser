@@ -95,6 +95,7 @@ test("merges user config and environment overrides, including false booleans", (
   assert.equal(config.obscura.proxy, "");
   assert.equal(config.obscura.userAgent, "Config UA");
   assert.equal(config.pinchtab.server, "http://env-pinchtab:9867");
+  assert.equal(config.pinchtab.installPolicy, "prompt");
 });
 
 test("validates malformed configuration and environment values", () => {
@@ -119,6 +120,10 @@ test("validates malformed configuration and environment values", () => {
   assert.throws(
     () => resolveBrowserConfig({ configPath: missingConfigPath(), env: { PI_OBSCURA_STEALTH: "maybe" } }),
     /PI_OBSCURA_STEALTH/,
+  );
+  assert.throws(
+    () => resolveBrowserConfig({ configPath: missingConfigPath(), env: { PI_PINCHTAB_INSTALL_POLICY: "later" } }),
+    /PI_PINCHTAB_INSTALL_POLICY/,
   );
 });
 

@@ -88,3 +88,9 @@
 - 完成：默认后端改为 PinchTab（Chrome）；Obscura 仅在显式选择 `obscura` 或 `auto` 时使用。
 - 验证：`npm test`；`D:/tools/obscura/obscura.exe --version`；原始 MCP 导航复现 `0xc00000fd`。
 - 遗留：Obscura 的复杂 GitHub 页面 stack overflow 仍需上游定位；稳定后再考虑恢复默认。
+
+### 2026-08-22（PinchTab 调用时自动启动）
+
+- 完成：PinchTab 首次健康检查连接失败时，自动启动配置或 PATH 中的 `pinchtab server`；默认 `prompt` 不下载，`always` 才从固定版本官方 Release 下载并校验当前平台二进制，轮询 `/health`，并在 Pi 关闭时清理由插件启动的进程。
+- 约束：`never|prompt|always` 控制下载策略；外部已运行的服务不会被接管或停止；远程服务不会触发下载；下载使用跨进程锁。
+- 验证：`npm test`（22 项通过、2 项集成测试跳过）；`git diff --check` 通过。

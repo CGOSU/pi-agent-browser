@@ -14,11 +14,11 @@ pi install npm:pi-agent-browser
 pi -e npm:pi-agent-browser
 ```
 
-默认使用本机 PinchTab（默认 `http://127.0.0.1:9867`，由 PinchTab 控制 Chrome）。Obscura 仍可通过配置或 `PI_BROWSER_BACKEND=obscura` 显式启用；后端一旦选定，就会在当前会话中锁定。
+默认使用本机 PinchTab（默认 `http://127.0.0.1:9867`，由 PinchTab 控制 Chrome）。首次调用时若发现 PinchTab 未运行，插件会优先查找本地可执行文件；默认策略 `prompt` 不会静默下载，而是提示设置 `PI_PINCHTAB_INSTALL_POLICY=always`。`always` 模式从固定版本的 PinchTab 官方 Release 下载并校验当前平台版本，然后执行 `pinchtab server`；`never` 模式完全禁止下载。插件退出时只清理由自己启动的服务。Obscura 仍可通过配置或 `PI_BROWSER_BACKEND=obscura` 显式启用；后端一旦选定，就会在当前会话中锁定。
 
 ### 后端准备
 
-- **PinchTab**：由用户自行安装并启动 HTTP 服务。插件不会安装、启动或停止 PinchTab。
+- **PinchTab**：首次调用时自动启动本地可执行文件；找不到时默认不下载，设置 `PI_PINCHTAB_INSTALL_POLICY=always` 才会从固定版本的官方 Release 下载并校验。如果配置的是远程 HTTP 服务，则需要用户自行启动服务。
 - **Obscura**：需要用户预先安装 [Obscura](https://github.com/h4ckf0r0day/obscura) 渲染版；Windows 可将目录加入 `PATH`，也可用 `PI_OBSCURA_PATH` 指定完整路径。
 
 如果两个后端都不可用，工具会报告包含检查地址和安装提示的错误；不会自动改用 Playwright、Chrome 或其他浏览器工具。
@@ -78,7 +78,9 @@ browser close
     "allowPrivateNetwork": false
   },
   "pinchtab": {
-    "server": "http://127.0.0.1:9867"
+    "path": "C:/tools/pinchtab.exe",
+    "server": "http://127.0.0.1:9867",
+    "installPolicy": "prompt"
   }
 }
 ```
@@ -95,6 +97,7 @@ browser close
 | --- | --- |
 | `PI_BROWSER_BACKEND=auto\|pinchtab\|obscura` | 后端模式 |
 | `PI_PINCHTAB_URL` | PinchTab HTTP 地址 |
+| `PI_PINCHTAB_INSTALL_POLICY=never\|prompt\|always` | 控制官方 PinchTab 下载策略，默认 `prompt` |
 | `PINCHTAB_TOKEN` | PinchTab Bearer 凭据，仅从环境透传，不写入配置 |
 | `PINCHTAB_SESSION` | 可选 PinchTab Session 凭据，仅从环境透传 |
 | `PI_OBSCURA_PATH` | Obscura 可执行文件路径 |
@@ -103,7 +106,7 @@ browser close
 | `PI_OBSCURA_USER_AGENT` | 自定义 User-Agent |
 | `PI_OBSCURA_ALLOW_PRIVATE_NETWORK=1` | 允许 Obscura 访问本机和私有网络 |
 
-PinchTab 和 MCP 控制面应仅暴露在可信的本地环境中。页面内容应视为不可信数据；不要把令牌写入配置文件或提交到仓库。插件不负责 PinchTab 服务的生命周期管理。
+PinchTab 和 MCP 控制面应仅暴露在可信的本地环境中。页面内容应视为不可信数据；不要把令牌写入配置文件或提交到仓库。插件只管理自己自动启动的 PinchTab 进程，不接管外部运行的服务。
 
 ### 查看运行时生效值
 

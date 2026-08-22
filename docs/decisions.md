@@ -22,6 +22,12 @@
 - 约束：只使用 Node.js 内置模块；不自动安装、启动或停止 PinchTab；凭据只从 `PINCHTAB_TOKEN`/`PINCHTAB_SESSION` 等环境变量透传，不写入用户配置。
 - 配置：用户配置位于 Windows `%APPDATA%/pi-agent-browser/config.json` 或其他平台 `${XDG_CONFIG_HOME:-~/.config}/pi-agent-browser/config.json`，`PI_BROWSER_CONFIG` 可覆盖路径；环境变量按字段覆盖配置文件。
 
+### 2026-08-22：默认使用 PinchTab 驱动 Chrome
+
+- 决定：默认后端从 `auto` 改为 `pinchtab`；PinchTab 不可用时默认直接报错，不自动切换到 Obscura。Obscura 仍可通过 `PI_BROWSER_BACKEND=obscura` 或配置文件显式启用。
+- 原因：当前 Obscura main 在 GitHub 复杂页面仍会触发 Windows stack overflow；PinchTab/Chrome 作为默认路径更稳定。
+- 约束：不改变现有命令接口、PinchTab 地址或后端会话锁定行为；待 Obscura 稳定后再显式改回默认值。
+
 ### 2026-08-18：自动后端选择在会话内锁定且禁止重放
 
 - 决定：`auto` 首次操作前先健康检查 PinchTab，再尝试 Obscura；成功后锁定实际后端。

@@ -14,6 +14,13 @@
 
 ## 已知问题
 
+### 2026-08-22：Obscura main 打开 GitHub PR 页面触发 Windows stack overflow
+
+- 现象：`browser open https://github.com/openai/codex/pull/37261` 返回 `Obscura exited before completing the request (code=3221225725, signal=none)`。
+- 根因：`3221225725 = 0xC00000FD = STATUS_STACK_OVERFLOW`。当前自行编译的 Obscura main（HEAD `39fe4d2`，Cargo 版本字符串为 `0.1.0`）仍可见 `thread 'main' has overflowed its stack`；复现时 stderr 大量落在 CSS selector matching/render 阶段。此前的 ES module 重复求值缺陷（issue #591，修复 commit `4f6d256`）已包含在该源码中，因此不能再把当前崩溃简单归因于旧模块修复。
+- 处理：默认改用 PinchTab 驱动 Chrome。设置 `OBSCURA_SCRIPT_DEADLINE_MS=1` 可验证跳过页面脚本后导航成功，但不是正常使用的修复。
+- 验证：`D:/tools/obscura/obscura.exe --version` 为 `0.1.0`；源码仓库 HEAD 为 `39fe4d2` 且包含 `4f6d256`；原始 MCP 导航仍复现 `0xc00000fd`。
+
 ### 2026-08-10：Obscura 0.2.0 打开 Vite 开发页会崩溃
 
 - 现象：访问包含 Vite HMR 注入脚本的页面时，Obscura 退出并返回 code 101。

@@ -8,7 +8,7 @@ import {
 import { PinchtabClient, DEFAULT_PINCHTAB_SERVER } from "./pinchtab-client.js";
 
 export const DEFAULT_BROWSER_CONFIG = Object.freeze({
-  backend: "auto",
+  backend: "pinchtab",
   obscura: Object.freeze({
     path: "",
     stealth: false,

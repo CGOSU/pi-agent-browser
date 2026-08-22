@@ -80,3 +80,11 @@
 - 完成：将扩展入口从 `extensions/agent-browser.ts` 迁移为 `extensions/index.ts`，并更新 `package.json` 的 `pi.extensions` 指向；pi 对 index 入口折叠显示，加载名即为包名，不再出现 `:agent-browser.ts`。
 - 验证：`npm test` 21 项中 19 项通过、2 项集成测试跳过；`npm pack --dry-run` 已包含 `extensions/index.ts`。
 - 遗留：若需更优雅的加载前缀，再调整 `package.json` 的 `name` 并同步 README 安装命令。
+
+### 2026-08-22（Obscura GitHub 页面崩溃诊断与默认后端调整）
+
+- 完成：确认 `code=3221225725` 是 Windows `0xC00000FD` stack overflow；本机自行编译的 Obscura main（HEAD `39fe4d2`，Cargo 版本 `0.1.0`）在 GitHub PR #37261 仍退出。
+- 修正：该源码已包含 `4f6d256` 的 ES module 修复；本次日志更接近 CSS selector matching/render 阶段，因此不再将当前崩溃归因于旧模块缺陷。
+- 完成：默认后端改为 PinchTab（Chrome）；Obscura 仅在显式选择 `obscura` 或 `auto` 时使用。
+- 验证：`npm test`；`D:/tools/obscura/obscura.exe --version`；原始 MCP 导航复现 `0xc00000fd`。
+- 遗留：Obscura 的复杂 GitHub 页面 stack overflow 仍需上游定位；稳定后再考虑恢复默认。

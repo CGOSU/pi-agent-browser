@@ -47,6 +47,16 @@ test("computes platform user config paths without requiring environment variable
   );
 });
 
+test("defaults to the PinchTab Chrome backend", () => {
+  const config = resolveBrowserConfig({
+    configPath: missingConfigPath(),
+    env: {},
+    platform: "linux",
+    home: "/home/test",
+  });
+  assert.equal(config.backend, "pinchtab");
+});
+
 test("merges user config and environment overrides, including false booleans", () => {
   const dir = mkdtempSync(join(tmpdir(), "pi-browser-config-"));
   const configPath = join(dir, "config.json");

@@ -14,7 +14,7 @@ pi install npm:pi-agent-browser
 pi -e npm:pi-agent-browser
 ```
 
-不需要日常配置即可使用：`auto` 模式首次操作时先检查本机 PinchTab（默认 `http://127.0.0.1:9867`），再检查 PATH 或配置中的 Obscura。后端一旦选定，就会在当前会话中锁定。
+默认使用本机 PinchTab（默认 `http://127.0.0.1:9867`，由 PinchTab 控制 Chrome）。Obscura 仍可通过配置或 `PI_BROWSER_BACKEND=obscura` 显式启用；后端一旦选定，就会在当前会话中锁定。
 
 ### 后端准备
 
@@ -69,7 +69,7 @@ browser close
 
 ```json
 {
-  "backend": "auto",
+  "backend": "pinchtab",
   "obscura": {
     "path": "C:/tools/obscura/obscura.exe",
     "stealth": false,
@@ -85,8 +85,8 @@ browser close
 
 配置优先级按字段计算：**命令/调用参数 > 环境变量 > 用户配置 > 默认值或自动发现**。当前后端通过 `backend` 或 `PI_BROWSER_BACKEND` 设置为：
 
+- `pinchtab`：只使用 PinchTab（默认）。
 - `auto`：先健康检查 PinchTab，再尝试 Obscura；会话锁定后不切换。
-- `pinchtab`：只使用 PinchTab。
 - `obscura`：只使用 Obscura。
 
 环境变量：

@@ -20,7 +20,7 @@ Viewing policy:
   Use screenshot only when visual layout, styling, or images are needed.
   Do not take screenshots for text-only questions.
 Backend policy:
-  The default backend is PinchTab (Chrome), auto-starting `pinchtab server` when its executable is available; select Obscura or auto mode in user config when needed.
+  The default backend is PinchTab (Chrome), auto-starting pinchtab server when its executable is available; select Obscura or auto mode in user config when needed.
   If browser fails, report the error; do not use Playwright, Chrome, or another browser tool as a fallback.
 Commands:
   open <url> - Navigate to a URL

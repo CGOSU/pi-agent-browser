@@ -11,7 +11,7 @@
 - Windows 下会解析 npm 生成的 `agent-browser.cmd`，直接启动其目标可执行文件，不让用户命令参数经过 `cmd.exe`。
 - 默认不自动安装 npm 包、不下载浏览器、不启动 PinchTab 或 Obscura。
 - `agent-browser` 本身负责 Chrome for Testing 的安装、无头启动、网络代理和浏览器会话生命周期。
-- 截图会读取 agent-browser 生成的图片并作为 Pi inline image 返回；过大的文本输出会保存到临时文件并截断展示。
+- 截图会读取 agent-browser 生成的图片并作为 Pi inline image 返回；`browser qr` 是截图别名，用于扫码登录；过大的文本输出会保存到临时文件并截断展示。
 - `agent-browser` 缺失时只返回手动安装提示：`npm install -g agent-browser && agent-browser install`。
 
 ## 验证状态

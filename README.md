@@ -30,6 +30,7 @@ browser open https://www.baidu.com
 browser snapshot -i
 browser click @e1
 browser screenshot
+browser qr
 browser close
 ```
 
@@ -48,9 +49,12 @@ browser close
 | `get text\|url\|title [@ref]` | 获取页面或元素信息 |
 | `wait <@ref\|ms>` | 等待元素或毫秒数 |
 | `screenshot [--full]` | 获取截图并返回给模型 |
+| `qr [--full]` | 截取当前页面并以内嵌图片返回，扫码登录时直接扫描 |
 | `close` | 关闭浏览器 |
 
 页面发生变化后，重新执行 `snapshot -i` 获取最新引用。
+
+扫码登录时执行 `browser qr`；二维码会以内嵌图片返回，无需到截图文件夹查找。二维码在长页面中时可使用 `browser qr --full`。
 
 ## 配置
 

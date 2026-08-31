@@ -10,7 +10,11 @@ import {
 } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
-import { agentBrowserInstallHint, resolveAgentBrowser } from "./agent-browser-cli.js";
+import {
+  agentBrowserInstallHint,
+  resolveAgentBrowser,
+  translateAgentBrowserCommand,
+} from "./agent-browser-cli.js";
 
 const TOOL_DESCRIPTION = `Browser automation via agent-browser CLI.
 Workflow: open URL → snapshot -i (get @refs like @e1) → interact → re-snapshot after page changes.
@@ -30,6 +34,7 @@ Commands:
   get text|url|title [@ref] - Get information
   wait <@ref|ms> - Wait for element or time
   screenshot [--full] - Take screenshot (image returned inline)
+  qr [--full] - Capture the current page for QR/manual login and return it inline
   close - Close browser
 Any valid agent-browser command works.`;
 
@@ -126,8 +131,11 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
       const content = result.content?.[0]?.text || "";
 
       // Screenshot
-      if (action === "screenshot") {
-        return new Text(theme.fg("success", `Screenshot saved: ${details.screenshotPath || "unknown"}`), 0, 0);
+      if (action === "screenshot" || action === "qr") {
+        const text = action === "qr"
+          ? "QR code returned inline; scan the image below"
+          : `Screenshot saved: ${details.screenshotPath || "unknown"}`;
+        return new Text(theme.fg("success", text), 0, 0);
       }
 
       // Snapshot — show element count
@@ -167,7 +175,7 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
 
       const action = parts[0].toLowerCase();
 
-      const result = await execAgentBrowser(pi, parts, {
+      const result = await execAgentBrowser(pi, translateAgentBrowserCommand(parts), {
         signal,
         timeout: 60000,
       });
@@ -184,7 +192,7 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
       const output = result.stdout.trim();
 
       // Screenshot: extract path, read file, return as image
-      if (action === "screenshot") {
+      if (action === "screenshot" || action === "qr") {
         const pathMatch = output.match(/saved(?:\s+to|:)\s+(.+)$/i);
         if (pathMatch) {
           const screenshotPath = pathMatch[1].trim();
@@ -197,14 +205,24 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
               : "image/png";
             return {
               content: [
-                { type: "text", text: `Screenshot saved: ${screenshotPath}` },
+                {
+                  type: "text",
+                  text: action === "qr"
+                    ? "QR code returned inline. Scan the image."
+                    : `Screenshot saved: ${screenshotPath}`,
+                },
                 { type: "image", data: base64, mimeType },
               ],
               details: { command: commandStr, action, screenshotPath },
             };
           } catch (err: any) {
             return {
-              content: [{ type: "text", text: `Screenshot saved to ${screenshotPath} but could not read file: ${err.message}` }],
+              content: [{
+                type: "text",
+                text: action === "qr"
+                  ? `QR code saved to ${screenshotPath} but could not return it inline: ${err.message}`
+                  : `Screenshot saved to ${screenshotPath} but could not read file: ${err.message}`,
+              }],
               details: { command: commandStr, action, screenshotPath, readError: err.message },
             };
           }

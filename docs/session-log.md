@@ -8,6 +8,12 @@
 
 ## 会话
 
+### 2026-08-31（扫码登录二维码）
+
+- 完成：增加 `browser qr [--full]` 命令别名，调用 agent-browser 截图并以内嵌图片返回；更新 README、当前状态和设计决策。
+- 验证：`npm test`（4 项通过）；`node --check extensions/agent-browser-cli.js`；`pi -e ./extensions/index.ts --help`；`git diff --check` 均通过。
+- 遗留：二维码识别不自动化，需要在扫码登录页面显式调用 `browser qr`。
+
 ### 2026-08-07
 
 - 完成：初始化 Git 仓库，设置 `main` 分支及 `origin` 远程地址。

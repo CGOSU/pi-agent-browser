@@ -52,6 +52,12 @@ export function resolveAgentBrowserPath({ env = process.env, platform = process.
   return resolved?.command;
 }
 
+export function translateAgentBrowserCommand(parts) {
+  return parts[0]?.toLowerCase() === "qr"
+    ? ["screenshot", ...parts.slice(1)]
+    : parts;
+}
+
 export function agentBrowserInstallHint(platform = process.platform) {
   const install = "npm install -g agent-browser && agent-browser install";
   return platform === "win32"

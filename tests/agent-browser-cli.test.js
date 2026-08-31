@@ -7,6 +7,7 @@ import {
   agentBrowserInstallHint,
   resolveAgentBrowser,
   resolveAgentBrowserPath,
+  translateAgentBrowserCommand,
 } from "../extensions/agent-browser-cli.js";
 
 test("resolves an agent-browser executable from PATH", () => {
@@ -33,6 +34,11 @@ test("resolves the target executable behind the Windows npm shim", () => {
     command: target,
     args: [],
   });
+});
+
+test("maps the QR command to an inline screenshot", () => {
+  assert.deepEqual(translateAgentBrowserCommand(["qr", "--full"]), ["screenshot", "--full"]);
+  assert.deepEqual(translateAgentBrowserCommand(["open", "https://example.com"]), ["open", "https://example.com"]);
 });
 
 test("returns a manual installation hint without installing anything", () => {

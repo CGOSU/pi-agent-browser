@@ -8,6 +8,12 @@
 
 ## 已确认决策
 
+### 2026-08-31：增加扫码登录截图别名
+
+- 决定：增加 `browser qr [--full]` 命令，将其映射为 agent-browser 的截图命令，并把生成图片以内嵌 image content 返回。
+- 原因：用户扫码登录时可直接在 Pi 中扫描二维码，不需要手动定位截图文件。
+- 约束：不自动判断页面是否包含二维码；需要扫码时由模型或用户显式调用 `qr`，仍使用当前页面截图。
+
 ### 2026-08-22：恢复 agent-browser CLI 为默认后端
 
 - 决定：`browser` 只调用 PATH 中的 `agent-browser` CLI，默认使用其无头 Chrome；不再在运行时启动、下载或配置 PinchTab/Obscura。

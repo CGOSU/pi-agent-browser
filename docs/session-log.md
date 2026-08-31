@@ -8,6 +8,12 @@
 
 ## 会话
 
+### 2026-08-31（命名 Profile 持久化）
+
+- 完成：新增用户级命名 Profile 配置与安全名称校验；接入 `browser persist on <name>|off|status`，统一为 browser 命令和 session shutdown close 注入 Profile；切换在 close 后生效；补充多站点、安全和性能文档。
+- 验证：`npm test`（6 项通过）；`node --test tests/agent-browser-cli.test.js tests/persistence.test.js`（12 项通过）；`pi -e ./extensions/index.ts --help`；`git diff --check` 均通过。
+- 遗留：网站主动注销、Cookie 过期或设备风控时仍需重新登录；尚未发布新的 npm 版本。
+
 ### 2026-08-31（扫码登录二维码）
 
 - 完成：增加 `browser qr [--full]` 命令别名，调用 agent-browser 截图并以内嵌图片返回；更新 README、当前状态和设计决策。

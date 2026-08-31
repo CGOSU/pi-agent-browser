@@ -8,6 +8,13 @@
 
 ## 已确认决策
 
+### 2026-08-31：命名 Profile 持久化并按信任边界隔离
+
+- 决定：提供 `browser persist on <name>|off|status`，由用户显式选择命名 Profile；Profile 放在用户本地数据目录，默认不启用。
+- 原因：Chrome 原生按网站 origin 保存多个网站的 Cookie、LocalStorage、IndexedDB 和 Service Worker，同时通过不同 Profile 隔离不同账号、用途和 Agent 的登录态。
+- 约束：Profile 名称只允许安全标识符；配置只保存当前名称，不保存认证数据；不复用日常 Chrome Profile；浏览器会话期间锁定 Profile，切换需 close 后再启动；`AGENT_BROWSER_PROFILE` 优先于插件配置；`off` 不删除旧 Profile。
+- 风险：同一命名 Profile 内的网站共享同一信任边界；网站过期、风控或主动注销仍会要求重新登录，Profile 数据也需要用户自行保护和清理。
+
 ### 2026-08-31：增加扫码登录截图别名
 
 - 决定：增加 `browser qr [--full]` 命令，将其映射为 agent-browser 的截图命令，并把生成图片以内嵌 image content 返回。

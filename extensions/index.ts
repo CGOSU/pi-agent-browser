@@ -15,6 +15,12 @@ import {
   resolveAgentBrowser,
   translateAgentBrowserCommand,
 } from "./agent-browser-cli.js";
+import {
+  disablePersistence,
+  enablePersistence,
+  getPersistenceStatus,
+  resolveBrowserProfile,
+} from "./persistence.js";
 
 const TOOL_DESCRIPTION = `Browser automation via agent-browser CLI.
 Workflow: open URL → snapshot -i (get @refs like @e1) → interact → re-snapshot after page changes.
@@ -85,12 +91,18 @@ function parseCommand(command: string): string[] {
   return args;
 }
 
-async function execAgentBrowser(pi: ExtensionAPI, args: string[], options?: any) {
+async function execAgentBrowser(
+  pi: ExtensionAPI,
+  args: string[],
+  options?: any,
+  profilePath?: string,
+) {
   const executable = resolveAgentBrowser({ env: process.env, platform: process.platform });
   if (!executable) {
     throw new Error(agentBrowserInstallHint(process.platform));
   }
-  return pi.exec(executable.command, [...executable.args, ...args], options);
+  const profileArgs = profilePath ? ["--profile", profilePath] : [];
+  return pi.exec(executable.command, [...executable.args, ...profileArgs, ...args], options);
 }
 
 function writeTempFile(content: string, prefix: string): string {
@@ -100,7 +112,107 @@ function writeTempFile(content: string, prefix: string): string {
   return file;
 }
 
+function persistenceErrorText(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message : "";
+  if (
+    message.startsWith("Profile name must") ||
+    message.startsWith("The ") ||
+    message.startsWith("Invalid pi-agent-browser persistence config.")
+  ) {
+    return message;
+  }
+  return fallback;
+}
+
+function persistenceUsageResult(text: string, isError = true) {
+  return {
+    content: [{ type: "text", text }],
+    details: { action: "persist", ...(isError ? { error: text } : {}) },
+    ...(isError ? { isError: true } : {}),
+  };
+}
+
+function persistenceStatusText(status: ReturnType<typeof getPersistenceStatus>): string {
+  if (status.source === "environment") {
+    return "Native AGENT_BROWSER_PROFILE is active.";
+  }
+  if (status.source === "config") {
+    return `Persistent profile \"${status.profileName}\" is enabled.`;
+  }
+  return "Persistent browser profiles are disabled.";
+}
+
+function hasProfileOption(parts: string[]): boolean {
+  return parts.some((part) => part === "--profile" || part.startsWith("--profile="));
+}
+
 export default function agentBrowserExtension(pi: ExtensionAPI) {
+  let browserSessionStarted = false;
+  let activeBrowserProfile: ReturnType<typeof resolveBrowserProfile> | undefined;
+
+  function getActiveBrowserProfile(): ReturnType<typeof resolveBrowserProfile> {
+    if (!browserSessionStarted) {
+      activeBrowserProfile = resolveBrowserProfile();
+      browserSessionStarted = true;
+    }
+    return activeBrowserProfile!;
+  }
+
+  function resetBrowserSession() {
+    browserSessionStarted = false;
+    activeBrowserProfile = undefined;
+  }
+
+  function handlePersistenceCommand(parts: string[]) {
+    const subcommand = parts[1]?.toLowerCase();
+    const usage = "Usage: browser persist on <name> | off | status";
+
+    try {
+      if (subcommand === "on" && parts.length === 3) {
+        const { profileName } = enablePersistence(parts[2]);
+        const status = getPersistenceStatus();
+        if (status.source === "environment") {
+          return persistenceUsageResult(
+            `Named profile \"${profileName}\" saved, but native AGENT_BROWSER_PROFILE remains active.`,
+            false,
+          );
+        }
+        const suffix = browserSessionStarted
+          ? " It will apply after the current browser is closed."
+          : "";
+        return persistenceUsageResult(`Persistent profile \"${profileName}\" enabled.${suffix}`, false);
+      }
+
+      if (subcommand === "off" && parts.length === 2) {
+        const status = disablePersistence();
+        if (status.source === "environment") {
+          return persistenceUsageResult(
+            "Named profile persistence disabled, but native AGENT_BROWSER_PROFILE remains active.",
+            false,
+          );
+        }
+        const suffix = browserSessionStarted
+          ? " The current browser remains unchanged until it is closed."
+          : "";
+        return persistenceUsageResult(`Persistent browser profiles are disabled.${suffix}`, false);
+      }
+
+      if (subcommand === "status" && parts.length === 2) {
+        const status = getPersistenceStatus();
+        const suffix = browserSessionStarted
+          ? " Changes apply after the current browser is closed."
+          : "";
+        return persistenceUsageResult(persistenceStatusText(status) + suffix, false);
+      }
+
+      return persistenceUsageResult(usage);
+    } catch (error) {
+      return persistenceUsageResult(
+        persistenceErrorText(error, "Unable to update browser persistence settings."),
+      );
+    }
+  }
+
   pi.registerTool({
     name: "browser",
     label: "Browser",
@@ -175,10 +287,48 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
 
       const action = parts[0].toLowerCase();
 
-      const result = await execAgentBrowser(pi, translateAgentBrowserCommand(parts), {
-        signal,
-        timeout: 60000,
-      });
+      if (action === "persist") {
+        return handlePersistenceCommand(parts);
+      }
+
+      let activeProfile: ReturnType<typeof resolveBrowserProfile>;
+      try {
+        activeProfile = getActiveBrowserProfile();
+      } catch (error) {
+        return {
+          content: [{
+            type: "text",
+            text: persistenceErrorText(error, "Unable to load browser persistence settings."),
+          }],
+          details: { error: "persistence-config", action },
+          isError: true,
+        };
+      }
+
+      if (activeProfile.profilePath && hasProfileOption(parts)) {
+        return {
+          content: [{
+            type: "text",
+            text: "Do not pass --profile while browser persistence is active; use `browser persist on <name>` instead.",
+          }],
+          details: { error: "profile-override", action },
+          isError: true,
+        };
+      }
+
+      let result;
+      try {
+        result = await execAgentBrowser(
+          pi,
+          translateAgentBrowserCommand(parts),
+          { signal, timeout: 60000 },
+          activeProfile.profilePath,
+        );
+      } finally {
+        if (action === "close") {
+          resetBrowserSession();
+        }
+      }
 
       if (result.code !== 0) {
         const errorOutput = (result.stderr || result.stdout).trim();
@@ -254,9 +404,12 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
   // Clean up browser on session exit
   pi.on("session_shutdown", async (_event, _ctx) => {
     try {
-      await execAgentBrowser(pi, ["close"], { timeout: 5000 });
+      const activeProfile = getActiveBrowserProfile();
+      await execAgentBrowser(pi, ["close"], { timeout: 5000 }, activeProfile.profilePath);
     } catch {
-      // Ignore — browser may already be closed
+      // Ignore — browser may already be closed or persistence config may be unavailable
+    } finally {
+      resetBrowserSession();
     }
   });
 }

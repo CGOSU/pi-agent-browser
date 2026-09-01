@@ -8,7 +8,7 @@ import {
   DEFAULT_MAX_LINES,
   formatSize,
 } from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
+import { getCapabilities, Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import {
   agentBrowserInstallHint,
@@ -226,7 +226,12 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
       return new Text(text, 0, 0);
     },
 
-    renderResult(result: any, { expanded, isPartial }: { expanded: boolean; isPartial: boolean }, theme: any) {
+    renderResult(
+      result: any,
+      { expanded, isPartial }: { expanded: boolean; isPartial: boolean },
+      theme: any,
+      context: any,
+    ) {
       if (isPartial) {
         return new Text(theme.fg("warning", "Running..."), 0, 0);
       }
@@ -244,9 +249,20 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
 
       // Screenshot
       if (action === "screenshot" || action === "qr") {
-        const text = action === "qr"
-          ? "QR code returned inline; scan the image below"
-          : `Screenshot saved: ${details.screenshotPath || "unknown"}`;
+        const screenshotPath = details.screenshotPath || "unknown";
+        let text;
+        if (action === "qr") {
+          const supportsInlineImages = Boolean(getCapabilities().images);
+          if (context?.showImages === false) {
+            text = `QR code saved: ${screenshotPath}\nInline image display is disabled in Pi settings; open the saved PNG file.`;
+          } else {
+            text = supportsInlineImages
+              ? `QR code returned inline; scan the image below\nSaved: ${screenshotPath}`
+              : `QR code saved: ${screenshotPath}\nThis terminal cannot display inline images; open the saved PNG file.`;
+          }
+        } else {
+          text = `Screenshot saved: ${screenshotPath}`;
+        }
         return new Text(theme.fg("success", text), 0, 0);
       }
 
@@ -358,7 +374,7 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
                 {
                   type: "text",
                   text: action === "qr"
-                    ? "QR code returned inline. Scan the image."
+                    ? `QR code returned inline. Scan the image.\nSaved: ${screenshotPath}`
                     : `Screenshot saved: ${screenshotPath}`,
                 },
                 { type: "image", data: base64, mimeType },

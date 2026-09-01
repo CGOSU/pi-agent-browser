@@ -8,6 +8,12 @@
 
 ## 会话
 
+### 2026-09-01（二维码 TUI 降级提示）
+
+- 完成：确认 `browser qr` 实际返回 `text,image`，并在文本结果中附带 PNG 保存路径；但 Pi TUI 仅在 Kitty/iTerm2 图像协议终端中绘制图片；不支持图片的终端此前错误地提示“scan the image below”。现在显示 PNG 保存路径和明确的降级原因；Pi 设置关闭图片显示时单独提示。
+- 验证：`npm test`（8 项通过）；`node --check extensions/agent-browser-cli.js`；`pi -ne -e ./extensions/index.ts --mode json --no-session "reply with OK"`；`git diff --check`。
+- 遗留：Windows Terminal、VS Code 集成终端等仍不能在 TUI 内直接绘制二维码；需打开保存的 PNG 或改用支持 Kitty/iTerm2 的终端。
+
 ### 2026-08-31（命名 Profile 持久化）
 
 - 完成：新增用户级命名 Profile 配置与安全名称校验；接入 `browser persist on <name>|off|status`，统一为 browser 命令和 session shutdown close 注入 Profile；切换在 close 后生效；补充多站点、安全和性能文档。

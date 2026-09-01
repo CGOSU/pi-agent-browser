@@ -14,6 +14,13 @@
 
 ## 已知问题
 
+### 2026-09-01：不支持图片协议的终端无法在 Pi TUI 显示二维码
+
+- 现象：`browser qr` 返回成功，但 TUI 中没有二维码。
+- 根因：Pi TUI 的 `Image` 组件只在 Kitty/iTerm2 图像协议终端中输出图片控制序列；Windows Terminal、VS Code 集成终端、普通 PowerShell/ConHost、tmux 等环境会返回 `images: null`。
+- 处理：扩展保留 image content，同时在不支持 inline image 时显示 PNG 保存路径；不要仅设置 `PI_IMAGE_PROTOCOL`，除非外层终端确实实现了对应协议。
+- 验证：`agent-browser open https://example.com` 后执行 `agent-browser screenshot` 成功生成 PNG；Pi JSON 工具结果包含 `text,image`；回归测试覆盖无图片终端提示。
+
 ### 2026-08-22：Obscura main 打开 GitHub PR 页面触发 Windows stack overflow
 
 - 现象：`browser open https://github.com/openai/codex/pull/37261` 返回 `Obscura exited before completing the request (code=3221225725, signal=none)`。

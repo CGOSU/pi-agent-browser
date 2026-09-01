@@ -8,6 +8,12 @@
 
 ## 已确认决策
 
+### 2026-09-01：二维码截图在不支持图片协议的终端显示保存路径
+
+- 决定：`browser qr` 继续返回标准 Pi image content；当 TUI/终端不支持 inline image 或用户关闭图片显示时，结果改为显示 PNG 保存路径和降级提示。
+- 原因：Pi TUI 只会在支持 Kitty/iTerm2 图像协议的终端绘制图片；Windows Terminal、VS Code 集成终端、普通 PowerShell/ConHost、tmux 等环境不能通过扩展强行获得图片能力。
+- 约束：不伪造 Kitty 控制序列，也不自动启动外部图片查看器；用户可在支持的终端中使用 inline image，或打开结果中的保存文件。
+
 ### 2026-08-31：命名 Profile 持久化并按信任边界隔离
 
 - 决定：提供 `browser persist on <name>|off|status`，由用户显式选择命名 Profile；Profile 放在用户本地数据目录，默认不启用。

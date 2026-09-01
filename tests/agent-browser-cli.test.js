@@ -51,7 +51,7 @@ test("returns a manual installation hint without installing anything", () => {
 const extensionMocks = {
   "@mariozechner/pi-coding-agent":
     'export const DEFAULT_MAX_BYTES = 1000; export const DEFAULT_MAX_LINES = 100; export const formatSize = () => "size"; export const truncateHead = (content) => ({ content, truncated: false, outputLines: 1, totalLines: 1, outputBytes: content.length, totalBytes: content.length });',
-  "@mariozechner/pi-tui": 'export class Text { constructor(...args) { this.args = args; } }',
+  "@mariozechner/pi-tui": 'export function getCapabilities() { return globalThis.__piBrowserTestCapabilities ?? { images: null }; } export class Text { constructor(...args) { this.args = args; } }',
   "@sinclair/typebox": 'export const Type = { Object: () => ({}), String: () => ({}) };',
 };
 let browserExtensionPromise;
@@ -74,6 +74,7 @@ function createFakePi() {
     calls,
     events,
     tool: undefined,
+    execResult: { code: 0, stdout: "ok", stderr: "" },
     registerTool(tool) {
       this.tool = tool;
     },
@@ -82,7 +83,7 @@ function createFakePi() {
     },
     exec(command, args, options) {
       calls.push({ command, args, options });
-      return Promise.resolve({ code: 0, stdout: "ok", stderr: "" });
+      return Promise.resolve(this.execResult);
     },
   };
   return pi;
@@ -131,6 +132,63 @@ async function withBrowserEnvironment(root, callback, extra = {}) {
     }
   }
 }
+
+test("returns the QR image and its saved path", async (t) => {
+  if (!process.features?.typescript) {
+    t.skip("Node runtime cannot load TypeScript extensions directly");
+    return;
+  }
+
+  const root = mkdtempSync(join(tmpdir(), "pi-agent-browser-qr-"));
+  try {
+    await withBrowserEnvironment(root, async () => {
+      const screenshotPath = join(root, "qr.png");
+      writeFileSync(screenshotPath, "png");
+      const agentBrowserExtension = await loadBrowserExtension();
+      const pi = createFakePi();
+      pi.execResult = { code: 0, stdout: `Screenshot saved to ${screenshotPath}`, stderr: "" };
+      agentBrowserExtension(pi);
+
+      const result = await runBrowserTool(pi, "qr");
+      assert.ok(result.content[0].text.includes(`Saved: ${screenshotPath}`));
+      assert.equal(result.content[1].type, "image");
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("renders a usable QR fallback when the terminal cannot display images", async (t) => {
+  if (!process.features?.typescript) {
+    t.skip("Node runtime cannot load TypeScript extensions directly");
+    return;
+  }
+
+  const agentBrowserExtension = await loadBrowserExtension();
+  const pi = createFakePi();
+  agentBrowserExtension(pi);
+  globalThis.__piBrowserTestCapabilities = { images: null };
+
+  try {
+    const rendered = pi.tool.renderResult(
+      {
+        content: [
+          { type: "text", text: "QR code returned inline. Scan the image." },
+          { type: "image", data: "cG5n", mimeType: "image/png" },
+        ],
+        details: { action: "qr", screenshotPath: "qr.png" }
+      },
+      { expanded: false, isPartial: false },
+      { fg: (_color, text) => text },
+      { showImages: true },
+    );
+
+    assert.match(rendered.args[0], /QR code saved: qr\.png/);
+    assert.match(rendered.args[0], /cannot display inline images/);
+  } finally {
+    delete globalThis.__piBrowserTestCapabilities;
+  }
+});
 
 test("routes browser commands and shutdown through one named profile", async (t) => {
   if (!process.features?.typescript) {

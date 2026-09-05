@@ -59,6 +59,26 @@ test("rejects unsafe profile names", () => {
   assert.equal(validateProfileName("work-1"), "work-1");
 });
 
+test("defaults to the named default profile when no config exists", () => {
+  const root = mkdtempSync(join(tmpdir(), "pi-agent-browser-default-"));
+  const env = windowsEnv(root);
+  try {
+    const profilePath = join(root, "pi-agent-browser", "profiles", "default");
+    assert.deepEqual(resolveBrowserProfile({ platform: "win32", env }), {
+      source: "config",
+      profileName: "default",
+      profilePath,
+    });
+    assert.deepEqual(getPersistenceStatus({ platform: "win32", env }), {
+      enabled: true,
+      source: "config",
+      profileName: "default",
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("enables and disables a named profile without deleting its data", () => {
   const root = mkdtempSync(join(tmpdir(), "pi-agent-browser-persistence-"));
   const env = windowsEnv(root);

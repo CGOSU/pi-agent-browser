@@ -10,6 +10,7 @@ import { join, posix, win32 } from "node:path";
 const APP_DIRECTORY = "pi-agent-browser";
 const CONFIG_FILE = "config.json";
 const PROFILE_DIRECTORY = "profiles";
+const DEFAULT_PROFILE_NAME = "default";
 const PROFILE_NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MAX_PROFILE_NAME_LENGTH = 64;
 
@@ -149,15 +150,26 @@ export function resolveBrowserProfile(options = {}) {
   }
 
   const { profile } = readPersistenceConfig(normalized);
-  if (!profile) {
-    return { source: "none" };
+  if (profile) {
+    return {
+      source: "config",
+      profileName: profile,
+      profilePath: profilePath(profile, normalized),
+    };
   }
 
-  return {
-    source: "config",
-    profileName: profile,
-    profilePath: profilePath(profile, normalized),
-  };
+  // A missing config means the default profile is enabled; an existing empty
+  // config is the explicit `persist off` state.
+  const { configPath } = getPersistencePaths(normalized);
+  if (!existsSync(configPath)) {
+    return {
+      source: "config",
+      profileName: DEFAULT_PROFILE_NAME,
+      profilePath: profilePath(DEFAULT_PROFILE_NAME, normalized),
+    };
+  }
+
+  return { source: "none" };
 }
 
 export function getPersistenceStatus(options = {}) {

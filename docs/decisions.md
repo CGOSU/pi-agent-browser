@@ -8,6 +8,12 @@
 
 ## 已确认决策
 
+### 2026-09-06：默认启用命名 Profile 持久化
+
+- 决定：浏览器默认使用命名 Profile 持久化登录状态，不再要求用户先执行 `browser persist on <name>`；默认 Profile 名称为 `default`。
+- 原因：用户明确要求开箱即用地保留登录状态，同时仍通过单一命名 Profile 隔离浏览器数据。
+- 约束：Profile 数据仍保存在本地用户数据目录；`browser persist off` 继续停用但不删除数据；`AGENT_BROWSER_PROFILE` 仍优先于插件默认 Profile；不同账号或信任边界仍需显式使用不同 Profile 名称。
+
 ### 2026-09-01：二维码截图在不支持图片协议的终端显示保存路径
 
 - 决定：`browser qr` 继续返回标准 Pi image content；当 TUI/终端不支持 inline image 或用户关闭图片显示时，结果改为显示 PNG 保存路径和降级提示。

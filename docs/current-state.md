@@ -13,7 +13,7 @@
 - `agent-browser` 本身负责 Chrome for Testing 的安装、无头启动、网络代理和浏览器会话生命周期。
 - 截图会读取 agent-browser 生成的图片并作为 Pi inline image 返回，同时在文本结果中附带 PNG 保存路径；`browser qr` 是截图别名，用于扫码登录；不支持 Kitty/iTerm2 图像协议的终端只显示截图保存路径；过大的文本输出会保存到临时文件并截断展示。
 - `browser persist on <name>|off|status` 管理用户级命名 Chrome Profile；默认关闭，配置只保存名称，Profile 数据保存在本地用户数据目录。
-- 持久化 Profile 在浏览器会话内锁定，切换或停用在 close 后的下一次启动生效；原生 `AGENT_BROWSER_PROFILE` 优先，状态输出不包含 Profile 路径。
+- 默认使用命名 Profile `default` 持久化登录状态；`browser persist on <name>|off|status` 可切换、停用或查看状态。Profile 在浏览器会话内锁定，切换或停用在 close 后的下一次启动生效；原生 `AGENT_BROWSER_PROFILE` 优先，状态输出不包含 Profile 路径。
 - `agent-browser` 缺失时只返回手动安装提示：`npm install -g agent-browser && agent-browser install`。
 
 ## 验证状态

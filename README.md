@@ -62,11 +62,11 @@ browser close
 
 ### 持久化登录与安全隔离
 
-默认浏览器会话不持久化。需要保存登录状态时，先选择一个信任边界明确的命名 Profile：
+默认使用命名 Profile `default` 持久化登录状态。需要切换到其他信任边界时，选择一个明确的命名 Profile：
 
 ```text
-browser persist on work
 browser persist status
+browser persist on work
 ```
 
 同一个 Profile 可以保存多个网站的 Cookie、LocalStorage、IndexedDB 和 Service Worker 状态，但只应放入同一信任边界的网站。不同账号、不同用途或不同 Agent 请使用不同名称，禁止共享 Profile 或复用日常 Chrome Profile。

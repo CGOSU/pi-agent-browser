@@ -190,6 +190,28 @@ test("renders a usable QR fallback when the terminal cannot display images", asy
   }
 });
 
+test("uses the default profile when persistence has not been configured", async (t) => {
+  if (!process.features?.typescript) {
+    t.skip("Node runtime cannot load TypeScript extensions directly");
+    return;
+  }
+
+  const root = mkdtempSync(join(tmpdir(), "pi-agent-browser-default-routing-"));
+  try {
+    await withBrowserEnvironment(root, async () => {
+      const agentBrowserExtension = await loadBrowserExtension();
+      const pi = createFakePi();
+      agentBrowserExtension(pi);
+      const profilePath = join(getPersistencePaths().profileRoot, "default");
+
+      await runBrowserTool(pi, "open https://example.com");
+      assert.deepEqual(pi.calls[0].args, ["--profile", profilePath, "open", "https://example.com"]);
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("routes browser commands and shutdown through one named profile", async (t) => {
   if (!process.features?.typescript) {
     t.skip("Node runtime cannot load TypeScript extensions directly");

@@ -28,6 +28,10 @@ Viewing policy:
   Use snapshot -i and get text first.
   Use screenshot only when visual layout, styling, or images are needed.
   Do not take screenshots for text-only questions.
+  For QR login, return only the QR code region with a small white border, never a full-page or viewport image.
+  Locate the QR code first and use a supported element screenshot or crop before returning the image.
+  If the QR code cannot be located or captured separately, report that limitation; do not fall back to a page screenshot.
+  The qr command is an uncropped screenshot alias, not a QR detector or cropper; do not use it for QR login until a supported crop can be applied before returning the image.
 Commands:
   open <url> - Navigate to URL
   snapshot -i - Interactive elements with @refs (re-snapshot after navigation)
@@ -40,7 +44,7 @@ Commands:
   get text|url|title [@ref] - Get information
   wait <@ref|ms> - Wait for element or time
   screenshot [--full] - Take screenshot (image returned inline)
-  qr [--full] - Capture the current page for QR/manual login and return it inline
+  qr [--full] - Raw screenshot alias; does not isolate QR codes and must not be used for QR login until cropping is supported
   close - Close browser
 Any valid agent-browser command works.`;
 

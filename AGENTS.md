@@ -34,6 +34,7 @@ Browser automation tool for pi — interactive browsing, screenshots with inline
 - 优先进行最小、局部、可验证的修改，不为不确定需求增加兼容层。
 - 遵循项目已有的代码风格、目录结构和工具链。
 - 不在代码、文档、日志或提交中记录令牌、密码、私钥等敏感信息。
+- 扫码登录时，返回给用户的截图只能包含二维码及少量留白，不得包含整页；若 CLI 无法单独定位并裁剪二维码，明确报告限制，不得回退到整页截图。当前实现状态见 `docs/current-state.md` 和 `docs/decisions.md`。
 
 ## 验证要求
 

@@ -307,6 +307,18 @@ export default function agentBrowserExtension(pi: ExtensionAPI) {
         return handlePersistenceCommand(parts);
       }
 
+      if (!resolveAgentBrowser({ env: process.env, platform: process.platform })) {
+        const message = `agent-browser CLI was not found in PATH (not installed or not on PATH). Browser commands are unavailable.\n${agentBrowserInstallHint(process.platform)}\nIf already installed, add it to PATH and restart Pi.`;
+        if (ctx?.hasUI) {
+          ctx.ui.notify(message, "error");
+        }
+        return {
+          content: [{ type: "text", text: message }],
+          details: { error: message, code: "agent-browser-not-found", action },
+          isError: true,
+        };
+      }
+
       let activeProfile: ReturnType<typeof resolveBrowserProfile>;
       try {
         activeProfile = getActiveBrowserProfile();

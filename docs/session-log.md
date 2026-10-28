@@ -8,6 +8,12 @@
 
 ## 会话
 
+### 2026-09-07（缺失 agent-browser 的可见提示）
+
+- 完成：browser 工具在执行前检查 PATH；找不到 `agent-browser` 时，有 UI 的 Pi 会话会显示错误通知，工具结果也返回安装指引；无 UI 时仍返回可读错误。每次调用重新检查，不自动安装。
+- 验证：新增缺失 CLI 提示、UI/无 UI 错误返回和安装后重试的针对性测试通过（1 项）；`git diff --check` 通过。完整运行 `node --test tests/agent-browser-cli.test.js` 时 9 项通过、1 项失败：Windows npm shim 路径用例在 macOS 上未通过。
+- 遗留：Windows npm shim 路径用例在当前 macOS 环境失败，未在本次修改；完整测试结果不全通过。
+
 ### 2026-09-01（二维码 TUI 降级提示）
 
 - 完成：确认 `browser qr` 实际返回 `text,image`，并在文本结果中附带 PNG 保存路径；但 Pi TUI 仅在 Kitty/iTerm2 图像协议终端中绘制图片；不支持图片的终端此前错误地提示“scan the image below”。现在显示 PNG 保存路径和明确的降级原因；Pi 设置关闭图片显示时单独提示。

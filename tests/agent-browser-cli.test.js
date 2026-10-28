@@ -133,6 +133,47 @@ async function withBrowserEnvironment(root, callback, extra = {}) {
   }
 }
 
+test("reports missing CLI visibly and permits retry after installation", async (t) => {
+  if (!process.features?.typescript) {
+    t.skip("Node runtime cannot load TypeScript extensions directly");
+    return;
+  }
+
+  const root = mkdtempSync(join(tmpdir(), "pi-agent-browser-missing-"));
+  try {
+    await withBrowserEnvironment(root, async () => {
+      const executable = join(root, process.platform === "win32" ? "agent-browser.exe" : "agent-browser");
+      rmSync(executable);
+      const agentBrowserExtension = await loadBrowserExtension();
+      const pi = createFakePi();
+      agentBrowserExtension(pi);
+      const notifications = [];
+      const ctx = { hasUI: true, ui: { notify: (message, level) => notifications.push({ message, level }) } };
+
+      const result = await pi.tool.execute("missing", { command: "open https://example.com" }, undefined, undefined, ctx);
+      assert.equal(result.isError, true);
+      assert.equal(result.details.code, "agent-browser-not-found");
+      assert.match(result.content[0].text, /not found in PATH/);
+      assert.match(result.content[0].text, /npm install -g agent-browser && agent-browser install/);
+      assert.deepEqual(notifications, [{ message: result.content[0].text, level: "error" }]);
+      const rendered = pi.tool.renderResult(result, { expanded: false }, { fg: (_color, text) => text });
+      assert.equal(rendered.args[0], result.content[0].text);
+
+      const headless = await pi.tool.execute("headless", { command: "snapshot -i" }, undefined, undefined, { hasUI: false });
+      assert.equal(headless.isError, true);
+      assert.equal(headless.details.code, "agent-browser-not-found");
+      assert.equal(pi.calls.length, 0);
+
+      writeFileSync(executable, "fixture");
+      const retried = await runBrowserTool(pi, "open https://example.com");
+      assert.equal(retried.isError, undefined);
+      assert.equal(retried.content[0].text, "ok");
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("returns the QR image and its saved path", async (t) => {
   if (!process.features?.typescript) {
     t.skip("Node runtime cannot load TypeScript extensions directly");
